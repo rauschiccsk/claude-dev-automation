@@ -1,0 +1,42 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2025-10-26T21:01:48.272137",
+  "current_project": null,
+  "projects": [
+    {
+      "name": "supplier_invoice_loader",
+      "path": "C:/Development/supplier_invoice_loader",
+      "description": "Multi-tenant SaaS invoice processing system",
+      "language": "python",
+      "status": "active"
+    },
+    {
+      "name": "orthodox-portal",
+      "path": "C:/Development/orthodox-portal",
+      "description": "Slovak Orthodox Christian web portal",
+      "language": "python",
+      "status": "active"
+    },
+    {
+      "name": "nex-genesis-server",
+      "path": "C:/Development/nex-genesis-server",
+      "description": "Python-based Btrieve database bridge for NEX Genesis ERP",
+      "language": "python",
+      "status": "active"
+    },
+    {
+      "name": "pdf-translation",
+      "path": "C:/Development/pdf-translation",
+      "description": "Automated book translation system",
+      "language": "python",
+      "status": "active"
+    },
+    {
+      "name": "uae-legal-agent",
+      "path": "C:/Development/uae-legal-agent",
+      "description": "AI-powered legal analysis system for UAE law",
+      "language": "python",
+      "status": "active"
+    }
+  ]
+}

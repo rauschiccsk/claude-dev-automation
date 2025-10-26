@@ -1,0 +1,121 @@
+# Claude Development Automation - Git Ignore
+
+# ============================================
+# CRITICAL: NEVER COMMIT THESE FILES!
+# ============================================
+
+# API Keys and secrets
+.env
+*.env
+workspace/.env
+
+# API usage logs (contain potentially sensitive data)
+workspace/logs/
+tools/logs/
+*.jsonl
+*.log
+
+# Session data (optional - contains conversation history)
+workspace/session_context.json
+workspace/history/
+
+# Project contexts (optional - may contain private notes)
+workspace/project_contexts/
+
+# ============================================
+# Python
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# ============================================
+# IDE
+# ============================================
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ============================================
+# OS
+# ============================================
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# ============================================
+# Testing & Temporary
+# ============================================
+
+# Test files
+test_*/
+*_test/
+*.test
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.backup_*
+
+# ============================================
+# Optional: Uncommit if you want to version
+# ============================================
+
+# Uncomment these if you DON'T want to version:
+# workspace/task.md
+# workspace/response.md

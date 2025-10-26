@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "workspace_root": "C:\\Development\\_workspace",
+  "tools_root": "C:\\Development\\_tools",
+  "n8n_webhook_url": "http://localhost:5678/webhook/claude-task",
+  "claude_api": {
+    "model": "claude-sonnet-4-5-20250929",
+    "max_tokens": 8000,
+    "temperature": 0.7
+  },
+  "automation": {
+    "auto_commit_default": false,
+    "auto_push_default": false,
+    "auto_test_before_commit": true,
+    "notification_enabled": true
+  },
+  "context_limits": {
+    "max_context_tokens": 5000,
+    "max_history_messages": 5,
+    "max_file_size_kb": 500
+  }
+}

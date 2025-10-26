@@ -1,0 +1,10 @@
+# Claude Development Automation System
+# Requirements file
+
+# Core dependencies
+anthropic>=0.39.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Optional but recommended
+colorama>=0.4.6  # Colored console output (Windows compatibility)
