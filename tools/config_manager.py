@@ -20,7 +20,7 @@ class ConfigManager:
         Args:
             workspace_root: Path to workspace root (default: C:/Development/_workspace)
         """
-        self.workspace_root = Path(workspace_root or "C:/Development/_workspace")
+        self.workspace_root = Path(workspace_root or "C:/Development/claude-dev-automation/workspace")
         self.config_file = self.workspace_root / "config.json"
         self.env_file = self.workspace_root / ".env"
         
