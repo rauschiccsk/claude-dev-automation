@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 """
-Configuration Manager
-Handles loading and accessing all configuration from workspace
+config_manager.py - Configuration management
+Loads and manages configuration from config.json and .env files
 """
 
 import json
@@ -10,170 +9,229 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
+
 class ConfigManager:
-    """Centralized configuration management"""
-    
-    def __init__(self, workspace_root: Optional[str] = None):
+    """Manages configuration from config.json and environment variables."""
+
+    def __init__(self, config_path: str = "workspace/config.json"):
         """
-        Initialize config manager
-        
+        Initialize configuration manager.
+
         Args:
-            workspace_root: Path to workspace root (default: C:/Development/_workspace)
+            config_path: Path to config.json file
         """
-        self.workspace_root = Path(workspace_root or "C:/Development/claude-dev-automation/workspace")
-        self.config_file = self.workspace_root / "config.json"
-        self.env_file = self.workspace_root / ".env"
-        
-        # Load environment variables
-        load_dotenv(self.env_file)
-        
-        # Load config
-        self.config = self._load_config()
-        
-    def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from config.json"""
-        if not self.config_file.exists():
-            raise FileNotFoundError(f"Config file not found: {self.config_file}")
-        
-        with open(self.config_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    
+        self.config_path = Path(config_path)
+        self.workspace_path = self.config_path.parent
+        self.env_path = self.workspace_path / '.env'
+
+        # Load environment variables from .env
+        if self.env_path.exists():
+            load_dotenv(self.env_path)
+
+    def load_config(self) -> Dict[str, Any]:
+        """
+        Load configuration from config.json.
+
+        Returns:
+            Configuration dictionary
+        """
+        if not self.config_path.exists():
+            print(f"⚠️  Config file not found: {self.config_path}")
+            return self._default_config()
+
+        try:
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+
+            # Merge with environment variables
+            config = self._merge_env_vars(config)
+
+            return config
+
+        except json.JSONDecodeError as e:
+            print(f"❌ Invalid JSON in config file: {e}")
+            return self._default_config()
+        except Exception as e:
+            print(f"❌ Error loading config: {e}")
+            return self._default_config()
+
+    def save_config(self, config: Dict[str, Any]) -> bool:
+        """
+        Save configuration to config.json.
+
+        Args:
+            config: Configuration dictionary
+
+        Returns:
+            True if successful
+        """
+        try:
+            # Ensure workspace directory exists
+            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Write config
+            with open(self.config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+
+            return True
+
+        except Exception as e:
+            print(f"❌ Error saving config: {e}")
+            return False
+
     def get(self, key: str, default: Any = None) -> Any:
         """
-        Get config value using dot notation
-        
-        Example:
-            config.get('claude_api.model')
-            config.get('automation.auto_commit_default')
+        Get configuration value by key.
+
+        Args:
+            key: Configuration key (supports dot notation)
+            default: Default value if key not found
+
+        Returns:
+            Configuration value or default
         """
+        config = self.load_config()
+
+        # Support dot notation (e.g., "api.key")
         keys = key.split('.')
-        value = self.config
-        
+        value = config
+
         for k in keys:
             if isinstance(value, dict) and k in value:
                 value = value[k]
             else:
                 return default
-        
+
         return value
-    
-    def get_env(self, key: str, default: Optional[str] = None) -> Optional[str]:
-        """Get environment variable"""
-        return os.getenv(key, default)
-    
-    @property
-    def anthropic_api_key(self) -> str:
-        """Get Anthropic API key"""
-        key = self.get_env('ANTHROPIC_API_KEY')
-        if not key or key == 'your_api_key_here':
-            raise ValueError("ANTHROPIC_API_KEY not set in .env file")
-        return key
-    
-    @property
-    def n8n_webhook_url(self) -> str:
-        """Get n8n webhook URL"""
-        return self.get_env('N8N_WEBHOOK_URL') or self.get('n8n_webhook_url')
-    
-    @property
-    def claude_model(self) -> str:
-        """Get Claude model name"""
-        return self.get('claude_api.model', 'claude-sonnet-4-5-20250929')
-    
-    @property
-    def claude_max_tokens(self) -> int:
-        """Get Claude max tokens"""
-        return self.get('claude_api.max_tokens', 8000)
-    
-    @property
-    def claude_temperature(self) -> float:
-        """Get Claude temperature"""
-        return self.get('claude_api.temperature', 0.7)
-    
-    @property
-    def auto_commit_default(self) -> bool:
-        """Get auto commit default setting"""
-        return self.get('automation.auto_commit_default', False)
-    
-    @property
-    def auto_push_default(self) -> bool:
-        """Get auto push default setting"""
-        return self.get('automation.auto_push_default', False)
-    
-    @property
-    def max_context_tokens(self) -> int:
-        """Get max context tokens"""
-        return self.get('context_limits.max_context_tokens', 5000)
-    
-    @property
-    def max_history_messages(self) -> int:
-        """Get max history messages"""
-        return self.get('context_limits.max_history_messages', 5)
-    
-    def save_config(self, config: Dict[str, Any]):
-        """Save updated configuration"""
-        with open(self.config_file, 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=2)
-        self.config = config
-    
-    def update_config(self, key: str, value: Any):
+
+    def _default_config(self) -> Dict[str, Any]:
         """
-        Update config value using dot notation
-        
-        Example:
-            config.update_config('automation.auto_commit_default', True)
+        Get default configuration.
+
+        Returns:
+            Default configuration dictionary
         """
-        keys = key.split('.')
-        config = self.config
-        
-        # Navigate to parent
-        for k in keys[:-1]:
-            if k not in config:
-                config[k] = {}
-            config = config[k]
-        
-        # Set value
-        config[keys[-1]] = value
-        
-        # Save
-        self.save_config(self.config)
-    
-    def __repr__(self) -> str:
-        return f"ConfigManager(workspace={self.workspace_root})"
+        return {
+            'workspace_path': str(self.workspace_path.absolute()),
+            'projects_path': 'C:/Development',
+            'api_key': os.getenv('ANTHROPIC_API_KEY', ''),
+            'model': 'claude-sonnet-4-5-20250929',
+            'max_tokens': 8000,
+            'temperature': 1.0,
+            'auto_commit': False,
+            'auto_push': False
+        }
+
+    def _merge_env_vars(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Merge environment variables into config.
+        Environment variables override config file values.
+
+        Args:
+            config: Configuration from file
+
+        Returns:
+            Merged configuration
+        """
+        # API key from environment
+        if 'ANTHROPIC_API_KEY' in os.environ:
+            config['api_key'] = os.environ['ANTHROPIC_API_KEY']
+
+        # Model from environment
+        if 'CLAUDE_MODEL' in os.environ:
+            config['model'] = os.environ['CLAUDE_MODEL']
+
+        # Max tokens from environment
+        if 'MAX_TOKENS' in os.environ:
+            try:
+                config['max_tokens'] = int(os.environ['MAX_TOKENS'])
+            except ValueError:
+                pass
+
+        return config
+
+    def validate_config(self, config: Dict[str, Any]) -> bool:
+        """
+        Validate configuration.
+
+        Args:
+            config: Configuration to validate
+
+        Returns:
+            True if valid, False otherwise
+        """
+        required_keys = ['api_key', 'workspace_path', 'projects_path']
+
+        for key in required_keys:
+            if key not in config or not config[key]:
+                print(f"❌ Missing required config key: {key}")
+                return False
+
+        # Validate paths exist
+        workspace_path = Path(config['workspace_path'])
+        if not workspace_path.exists():
+            print(f"❌ Workspace path does not exist: {workspace_path}")
+            return False
+
+        projects_path = Path(config['projects_path'])
+        if not projects_path.exists():
+            print(f"⚠️  Projects path does not exist: {projects_path}")
+            # Not critical, just a warning
+
+        return True
 
 
-# Singleton instance
-_config_instance = None
-
-def get_config() -> ConfigManager:
-    """Get singleton config instance"""
-    global _config_instance
-    if _config_instance is None:
-        _config_instance = ConfigManager()
-    return _config_instance
-
-
+# Example usage and testing
 if __name__ == "__main__":
-    # Test configuration
-    print("Testing Configuration Manager...")
-    print("=" * 60)
-    
-    try:
-        config = ConfigManager()
-        
-        print(f"✅ Config loaded from: {config.config_file}")
-        print(f"✅ Model: {config.claude_model}")
-        print(f"✅ Max tokens: {config.claude_max_tokens}")
-        print(f"✅ Temperature: {config.claude_temperature}")
-        print(f"✅ Auto commit: {config.auto_commit_default}")
-        print(f"✅ Max context: {config.max_context_tokens}")
-        print(f"✅ n8n URL: {config.n8n_webhook_url}")
-        
-        # Test API key (without showing it)
-        key = config.anthropic_api_key
-        print(f"✅ API Key: {'*' * 20}{key[-8:]}")
-        
-        print("\n" + "=" * 60)
-        print("✅ Configuration test passed!")
-        
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    print("[TEST] Testing ConfigManager...\n")
+
+    # Test with default config
+    manager = ConfigManager("workspace/config.json")
+
+    print("[INFO] Loading configuration...")
+    config = manager.load_config()
+
+    print("\n[OK] Configuration loaded:")
+    print(f"     Workspace: {config.get('workspace_path', 'N/A')}")
+    print(f"     Projects: {config.get('projects_path', 'N/A')}")
+    print(f"     Model: {config.get('model', 'N/A')}")
+    print(f"     Max tokens: {config.get('max_tokens', 'N/A')}")
+
+    # Check API key (don't print full key)
+    api_key = config.get('api_key', '')
+    if api_key:
+        print(f"     API key: {api_key[:10]}...{api_key[-4:]} (length: {len(api_key)})")
+    else:
+        print(f"     API key: NOT SET [WARNING]")
+
+    # Test validation
+    print("\n[INFO] Validating configuration...")
+    is_valid = manager.validate_config(config)
+    print(f"     {'[OK]' if is_valid else '[ERROR]'} Configuration is {'valid' if is_valid else 'invalid'}")
+
+    # Test get method with dot notation
+    print("\n[INFO] Testing get method...")
+    workspace = manager.get('workspace_path', 'default')
+    print(f"     workspace_path: {workspace}")
+
+    # Test save (create sample config)
+    print("\n[INFO] Testing save configuration...")
+    sample_config = {
+        'workspace_path': 'C:/Development/claude-dev-automation/workspace',
+        'projects_path': 'C:/Development',
+        'api_key': 'sk-ant-...',
+        'model': 'claude-sonnet-4-5-20250929',
+        'max_tokens': 8000
+    }
+
+    # Save to test file
+    test_manager = ConfigManager("workspace/test_config.json")
+    success = test_manager.save_config(sample_config)
+    print(f"     {'[OK]' if success else '[ERROR]'} Save {'successful' if success else 'failed'}")
+
+    if success and Path("workspace/test_config.json").exists():
+        # Clean up test file
+        Path("workspace/test_config.json").unlink()
+        print("     [OK] Test file cleaned up")
+
+    print("\n[OK] All tests completed!")

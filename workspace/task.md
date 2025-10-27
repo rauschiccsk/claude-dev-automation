@@ -1,30 +1,11 @@
-PROJECT: nex-genesis-server
-TASK: Detailná analýza projektu - ďalšie kroky
-PRIORITY: HIGH
+PROJECT: claude-dev-automation
+TASK: Zhodnoť súčasný stav projektu a povedz mi 3 najväčšie silné stránky systému
+PRIORITY: NORMAL
 AUTO_COMMIT: no
 AUTO_PUSH: no
 
 ## Kontext
-NEX Genesis Server - Python Btrieve database bridge
-
-## Požiadavky
-MUSÍŠ MI DAŤ ODPOVEĎ V SLOVENČINE s týmito bodmi:
-
-1. **Aktuálny stav projektu** - čo je hotové?
-2. **Čo FAILUJE** - konkrétne testy alebo problémy
-3. **Ďalšie kroky** - číslovane, konkrétne
-4. **Priorita** - čo spraviť ako prvé
-
-## Výstup
-Odpoveď MUSÍ obsahovať:
-- Zoznam failing testov (ak sú)
-- Konkrétne súbory na opravu
-- Kroky čo urobiť (1, 2, 3...)
-
-Formát: Slovenčina, jasné body, akcionovateľné kroky.
+Potrebujem analýzu projektu bez úpravy súborov. Chcem vedieť čo systém robí dobre.
 
 ## Poznámky
-Session notes si už načítal. Odpovedz na základe nich.
-```
-
----
+Tento test overí či sa Claude's response zobrazuje v response.md.

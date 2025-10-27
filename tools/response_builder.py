@@ -1,269 +1,252 @@
-#!/usr/bin/env python3
 """
-Response Builder
-Formats responses for response.md file
+response_builder.py - Builds formatted markdown responses
+Generates response.md with Claude's analysis and file changes
 """
 
+from typing import List, Dict, Optional
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+
 
 class ResponseBuilder:
-    """Build formatted responses for response.md"""
-    
-    def __init__(self):
-        """Initialize response builder"""
-        self.sections = []
-        
+    """Builds formatted markdown response files."""
+
     def build_response(
         self,
-        project_name: str,
-        task_summary: str,
-        status: str,
-        tokens_used: Dict[str, int],
-        file_changes: List[Dict[str, Any]] = None,
-        git_result: Dict[str, Any] = None,
-        test_results: Optional[str] = None,
-        notes: Optional[str] = None,
-        next_steps: Optional[List[str]] = None
+        task: str,
+        priority: str,
+        file_changes: List[Dict],
+        token_usage: Optional[Dict] = None,
+        timestamp: Optional[str] = None,
+        git_status: Optional[str] = None,
+        claude_response: Optional[str] = None,  # ← ADDED: Claude's analysis text
     ) -> str:
         """
-        Build complete response
-        
+        Build formatted response markdown.
+
         Args:
-            project_name: Project name
-            task_summary: Brief task summary
-            status: Status (✅ COMPLETED, ⏳ IN PROGRESS, ❌ FAILED)
-            tokens_used: Dict with input/output/total tokens
-            file_changes: List of file change results
-            git_result: Git commit/push results
-            test_results: Test output
-            notes: Additional notes
-            next_steps: List of next steps
-            
+            task: Task description
+            priority: Task priority (LOW/NORMAL/HIGH)
+            file_changes: List of file operation results
+            token_usage: Token usage statistics
+            timestamp: ISO timestamp
+            git_status: Git status output
+            claude_response: Claude's analysis text (when no files changed)
+
         Returns:
-            Formatted markdown response
+            Formatted markdown string
         """
-        
-        # Header
-        response = f"""# Task Response
-**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
-**Project:** {project_name}  
-**Status:** {status}  
-**Tokens used:** {tokens_used.get('total', 0):,} (saved {40000 - tokens_used.get('total', 0):,} vs chat init)
+        response = "# 🤖 Claude Development Response\n\n"
 
----
+        # Header with metadata
+        response += self._build_header(task, priority, timestamp)
 
-## Summary
-{task_summary}
+        # Token usage
+        if token_usage:
+            response += self._build_token_usage(token_usage)
 
-"""
-        
-        # File changes section
+        # Claude's Analysis (when no file changes)
+        if claude_response:
+            response += self._build_claude_analysis(claude_response)
+
+        # Git status (if available)
+        if git_status:
+            response += self._build_git_status(git_status)
+
+        # File changes (if any)
         if file_changes:
-            response += "## Changes Made\n\n"
-            
-            successful = [c for c in file_changes if c.get('success', False)]
-            failed = [c for c in file_changes if not c.get('success', False)]
-            
-            if successful:
-                response += f"### 📝 Modified Files ({len(successful)})\n\n"
-                for change in successful:
-                    file_path = change.get('file', 'unknown')
-                    action = change.get('action', 'modified')
-                    response += f"{self._get_change_icon(action)} **{file_path}** - {action}\n"
-                response += "\n"
-            
-            if failed:
-                response += f"### ❌ Failed Operations ({len(failed)})\n\n"
-                for change in failed:
-                    file_path = change.get('file', 'unknown')
-                    error = change.get('error', 'Unknown error')
-                    response += f"- **{file_path}**: {error}\n"
-                response += "\n"
-        
-        # Git operations section
-        if git_result:
-            response += "## Git Operations\n\n"
-            
-            commit = git_result.get('commit')
-            push = git_result.get('push')
-            
-            if commit:
-                if commit.get('success'):
-                    hash = commit.get('commit_hash', 'unknown')
-                    msg = commit.get('message', '')
-                    response += f"- ✅ Commit: `{hash}` - {msg}\n"
-                else:
-                    error = commit.get('error', 'Unknown error')
-                    response += f"- ❌ Commit failed: {error}\n"
-            
-            if push:
-                if push.get('success'):
-                    remote = push.get('remote', 'origin')
-                    response += f"- ✅ Pushed to: {remote}\n"
-                else:
-                    response += f"- ⏸️  Push: NOT executed (AUTO_PUSH: no)\n"
-            elif git_result.get('commit', {}).get('success'):
-                response += "- ⏸️  Push: NOT executed (AUTO_PUSH: no)\n"
-            
-            response += "\n"
-        
-        # Test results section
-        if test_results:
-            response += "## Test Results\n\n"
-            response += "```\n"
-            response += test_results
-            response += "\n```\n\n"
-        
-        # Notes section
-        if notes:
-            response += "## Notes\n\n"
-            response += notes + "\n\n"
-        
-        # Next steps section
-        if next_steps:
-            response += "## Next Steps\n\n"
-            for i, step in enumerate(next_steps, 1):
-                response += f"{i}. {step}\n"
-            response += "\n"
-        
-        # Token usage details
-        response += "## Token Usage\n\n"
-        response += "| Category | Tokens |\n"
-        response += "|----------|--------|\n"
-        response += f"| Context  | {tokens_used.get('input', 0):,} |\n"
-        response += f"| Response | {tokens_used.get('output', 0):,} |\n"
-        response += f"| **Total**| **{tokens_used.get('total', 0):,}** |\n"
-        response += "\n"
-        
-        # Cost estimate
-        cost = self._estimate_cost(
-            tokens_used.get('input', 0),
-            tokens_used.get('output', 0)
-        )
-        response += f"**Estimated cost:** ${cost:.4f}\n\n"
-        
+            response += self._build_file_changes(file_changes)
+        else:
+            if not claude_response:
+                response += "## 📝 File Changes\n\n"
+                response += "_No file changes were made._\n\n"
+
         # Footer
-        response += "---\n"
-        response += "*All changes have been written to your project directory.*\n"
-        response += "*Review git diff in PyCharm before pushing.*\n"
-        
+        response += self._build_footer()
+
         return response
-    
-    def _get_change_icon(self, action: str) -> str:
-        """Get emoji icon for change type"""
-        icons = {
-            "created": "✨",
-            "updated": "📝",
-            "deleted": "🗑️",
-            "overwritten": "♻️"
+
+    def _build_header(self, task: str, priority: str, timestamp: Optional[str]) -> str:
+        """Build response header."""
+        header = f"**Timestamp:** {timestamp or datetime.now().isoformat()}\n"
+        header += f"**Priority:** {priority}\n\n"
+        header += "---\n\n"
+        header += "## 🎯 Task\n\n"
+        header += f"{task}\n\n"
+        return header
+
+    def _build_token_usage(self, usage: Dict) -> str:
+        """Build token usage section."""
+        section = "## 💰 Token Usage\n\n"
+        section += f"- **Input tokens:** {usage.get('input_tokens', 0):,}\n"
+        section += f"- **Output tokens:** {usage.get('output_tokens', 0):,}\n"
+        section += f"- **Total tokens:** {usage.get('total_tokens', 0):,}\n"
+
+        # Calculate cost estimate (Claude Sonnet 4.5 pricing)
+        input_cost = usage.get('input_tokens', 0) * 0.003 / 1000
+        output_cost = usage.get('output_tokens', 0) * 0.015 / 1000
+        total_cost = input_cost + output_cost
+
+        section += f"- **Estimated cost:** ${total_cost:.4f}\n\n"
+        return section
+
+    def _build_claude_analysis(self, analysis: str) -> str:
+        """
+        Build Claude's analysis section.
+        This is shown when Claude provides recommendations without file changes.
+        """
+        section = "## 💬 Claude's Analysis\n\n"
+        section += analysis.strip() + "\n\n"
+        section += "---\n\n"
+        return section
+
+    def _build_git_status(self, status: str) -> str:
+        """Build Git status section."""
+        section = "## 📊 Git Status\n\n"
+        section += "```\n"
+        section += status.strip()
+        section += "\n```\n\n"
+        return section
+
+    def _build_file_changes(self, changes: List[Dict]) -> str:
+        """Build file changes section."""
+        section = "## 📝 File Changes\n\n"
+        section += f"**Total files modified:** {len(changes)}\n\n"
+
+        for i, change in enumerate(changes, 1):
+            section += f"### {i}. {change['path']}\n\n"
+            section += f"**Operation:** `{change['operation']}`\n"
+
+            if change.get('success'):
+                section += f"**Status:** ✅ Success\n"
+            else:
+                section += f"**Status:** ❌ Failed\n"
+                if change.get('error'):
+                    section += f"**Error:** {change['error']}\n"
+
+            # Show file preview for small files
+            if change.get('content') and len(change['content']) < 2000:
+                section += f"\n**Preview:**\n```{self._detect_language(change['path'])}\n"
+                section += change['content'][:500]
+                if len(change['content']) > 500:
+                    section += "\n... (truncated)"
+                section += "\n```\n"
+            elif change.get('content'):
+                lines = change['content'].count('\n') + 1
+                chars = len(change['content'])
+                section += f"\n**Size:** {lines} lines, {chars:,} characters\n"
+
+            section += "\n"
+
+        return section
+
+    def _detect_language(self, path: str) -> str:
+        """Detect code language from file extension."""
+        ext_map = {
+            '.py': 'python',
+            '.js': 'javascript',
+            '.ts': 'typescript',
+            '.jsx': 'jsx',
+            '.tsx': 'tsx',
+            '.java': 'java',
+            '.cpp': 'cpp',
+            '.c': 'c',
+            '.cs': 'csharp',
+            '.go': 'go',
+            '.rs': 'rust',
+            '.rb': 'ruby',
+            '.php': 'php',
+            '.swift': 'swift',
+            '.kt': 'kotlin',
+            '.scala': 'scala',
+            '.html': 'html',
+            '.css': 'css',
+            '.scss': 'scss',
+            '.json': 'json',
+            '.xml': 'xml',
+            '.yaml': 'yaml',
+            '.yml': 'yaml',
+            '.md': 'markdown',
+            '.sql': 'sql',
+            '.sh': 'bash',
+            '.ps1': 'powershell',
         }
-        return icons.get(action, "📄")
-    
-    def _estimate_cost(self, input_tokens: int, output_tokens: int) -> float:
-        """Estimate API cost"""
-        input_cost = (input_tokens / 1_000_000) * 3.0
-        output_cost = (output_tokens / 1_000_000) * 15.0
-        return input_cost + output_cost
-    
-    def build_error_response(
-        self,
-        project_name: str,
-        error_message: str,
-        error_details: Optional[str] = None
-    ) -> str:
-        """Build error response"""
-        
-        response = f"""# Task Response
-**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
-**Project:** {project_name}  
-**Status:** ❌ ERROR
 
----
+        for ext, lang in ext_map.items():
+            if path.endswith(ext):
+                return lang
 
-## Error
+        return ''
 
-{error_message}
-
-"""
-        
-        if error_details:
-            response += "### Details\n\n"
-            response += "```\n"
-            response += error_details
-            response += "\n```\n\n"
-        
-        response += "---\n"
-        response += "*Please check the error and try again.*\n"
-        
-        return response
+    def _build_footer(self) -> str:
+        """Build response footer."""
+        footer = "---\n\n"
+        footer += "_Generated by Claude Dev Automation_\n"
+        footer += f"_Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_\n"
+        return footer
 
 
 if __name__ == "__main__":
-    # Test response builder
-    print("Testing Response Builder...")
-    print("=" * 60)
-    
-    try:
-        builder = ResponseBuilder()
-        
-        # Test successful response
-        print("\n1. Building success response...")
-        
-        response = builder.build_response(
-            project_name="uae-legal-agent",
-            task_summary="Added retry mechanism with exponential backoff",
-            status="✅ COMPLETED",
-            tokens_used={
-                "input": 1234,
-                "output": 2345,
-                "total": 3579
-            },
-            file_changes=[
-                {
-                    "success": True,
-                    "action": "created",
-                    "file": "src/core/retry.py"
-                },
-                {
-                    "success": True,
-                    "action": "updated",
-                    "file": "tests/test_retry.py"
-                }
-            ],
-            git_result={
-                "commit": {
-                    "success": True,
-                    "commit_hash": "abc123f",
-                    "message": "Add retry mechanism"
-                },
-                "push": None
-            },
-            test_results="All tests passed (2/2)",
-            next_steps=[
-                "Review git diff in PyCharm",
-                "Test with real API",
-                "Push to repository"
-            ]
-        )
-        
-        print("✅ Success response built")
-        print(f"   Length: {len(response)} chars")
-        
-        # Test error response
-        print("\n2. Building error response...")
-        
-        error_response = builder.build_error_response(
-            project_name="test-project",
-            error_message="API key not found",
-            error_details="ANTHROPIC_API_KEY not set in .env file"
-        )
-        
-        print("✅ Error response built")
-        print(f"   Length: {len(error_response)} chars")
-        
-        print("\n" + "=" * 60)
-        print("✅ Response Builder test passed!")
-        
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    builder = ResponseBuilder()
+
+    # Example 1: Response with file changes
+    response1 = builder.build_response(
+        task="Add logging to authentication module",
+        priority="HIGH",
+        file_changes=[
+            {
+                'path': 'src/auth.py',
+                'operation': 'MODIFY',
+                'success': True,
+                'content': 'import logging\n\nlogger = logging.getLogger(__name__)\n'
+            }
+        ],
+        token_usage={
+            'input_tokens': 1500,
+            'output_tokens': 800,
+            'total_tokens': 2300
+        }
+    )
+
+    print("Example 1: With file changes")
+    print("="*60)
+    print(response1)
+    print("\n\n")
+
+    # Example 2: Response with analysis only (no file changes)
+    response2 = builder.build_response(
+        task="Analyzuj projekt a navrhni vylepšenia",
+        priority="NORMAL",
+        file_changes=[],
+        claude_response="""
+Analyzoval som projekt a identifikoval som nasledujúce oblasti na vylepšenie:
+
+## 🔍 Zistenia
+
+1. **Testovanie**
+   - Pokrytie testami je 65%, odporúčam zvýšiť na 80%+
+   - Chýbajú integračné testy pre API endpointy
+
+2. **Dokumentácia**
+   - README.md je zastaraný
+   - Chýba API dokumentácia
+
+3. **Výkon**
+   - Databázové queries nie sú optimalizované
+   - Odporúčam pridať indexy na `user_id` a `created_at`
+
+## 💡 Odporúčania
+
+1. Začať s testovaním - najväčší impact
+2. Aktualizovať dokumentáciu
+3. Optimalizovať databázu v ďalšej fáze
+        """,
+        token_usage={
+            'input_tokens': 4200,
+            'output_tokens': 850,
+            'total_tokens': 5050
+        }
+    )
+
+    print("Example 2: Analysis only (no file changes)")
+    print("="*60)
+    print(response2)
