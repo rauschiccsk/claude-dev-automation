@@ -27,14 +27,22 @@ class FileOperationExtractor:
         """
         operations = []
 
+        # Remove markdown code blocks if present
+        # Pattern 1: ```xml ... ```
+        response = re.sub(r'```xml\s*', '', response, flags=re.IGNORECASE)
+        response = re.sub(r'```\s*', '', response)
+
         # Try to find <file_operations> XML block
         pattern = r'<file_operations>(.*?)</file_operations>'
-        matches = re.findall(pattern, response, re.DOTALL)
+        matches = re.findall(pattern, response, re.DOTALL | re.IGNORECASE)
 
         if not matches:
+            print(f"[INFO] No <file_operations> XML found in response")
             return operations
 
-        for match in matches:
+        print(f"[INFO] Found {len(matches)} <file_operations> block(s)")
+
+        for match_idx, match in enumerate(matches):
             # Wrap in root element for XML parsing
             xml_text = f'<file_operations>{match}</file_operations>'
 
@@ -46,6 +54,7 @@ class FileOperationExtractor:
                     op_path = op_elem.get('path', '')
 
                     if not op_type or not op_path:
+                        print(f"[WARNING] Skipping operation with missing type or path")
                         continue
 
                     operation = {
@@ -57,12 +66,25 @@ class FileOperationExtractor:
                     if op_type in ['create', 'modify']:
                         content_elem = op_elem.find('content')
                         if content_elem is not None:
-                            operation['content'] = content_elem.text or ''
+                            # Get text including nested content
+                            content = content_elem.text or ''
+                            # Add text from all child elements
+                            for child in content_elem:
+                                if child.text:
+                                    content += child.text
+                                if child.tail:
+                                    content += child.tail
+                            operation['content'] = content.strip()
+                        else:
+                            print(f"[WARNING] No content found for {op_type} operation: {op_path}")
+                            continue
 
                     operations.append(operation)
+                    print(f"[OK] Extracted {op_type} operation: {op_path}")
 
             except ET.ParseError as e:
-                print(f"[WARNING] Failed to parse XML: {e}")
+                print(f"[WARNING] Failed to parse XML block {match_idx + 1}: {e}")
+                print(f"[DEBUG] XML preview: {xml_text[:500]}...")
                 continue
 
         return operations
@@ -87,7 +109,7 @@ class FileOperationExtractor:
 
         # Check content for create/modify
         if operation['type'] in ['create', 'modify']:
-            if 'content' not in operation:
+            if 'content' not in operation or not operation['content']:
                 return False
 
         # Check path safety (no absolute paths, no parent directory escapes)
@@ -214,10 +236,11 @@ class FileOperationExecutor:
 if __name__ == "__main__":
     print("\n[TEST] Testing File Operations...")
 
-    # Test XML response
+    # Test with markdown-wrapped XML (simulating Claude response)
     test_response = """
 Here is my analysis...
 
+```xml
 <file_operations>
   <operation type="create" path="test/new_file.py">
     <content>
@@ -232,6 +255,7 @@ print("Updated")
     </content>
   </operation>
 </file_operations>
+```
 
 That's my recommendation.
 """
