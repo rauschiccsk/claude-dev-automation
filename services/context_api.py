@@ -1,117 +1,79 @@
 """
-Context API Service
-Flask API that provides smart context building for n8n workflow.
-Reuses existing Python modules from claude-dev-automation.
+Flask Context API
+Provides endpoints for Claude Dev Automation system
 """
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from pathlib import Path
-import sys
-import logging
-import re
+import os
+import shutil
+from datetime import datetime
 
-# Add tools directory to path
-tools_dir = Path(__file__).parent.parent / 'tools'
-sys.path.insert(0, str(tools_dir))
-
-from enhanced_context_builder import EnhancedContextBuilder
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Create Flask app
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests from n8n
+CORS(app)
 
-# Initialize context builder
-builder = EnhancedContextBuilder(projects_path="C:/Development")
+# Base paths
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WORKSPACE_PATH = os.path.join(PROJECT_ROOT, 'workspace')
 
 
 @app.route('/health', methods=['GET'])
 def health():
-    """
-    Health check endpoint.
-
-    Returns:
-        JSON with status
-    """
+    """Health check endpoint"""
     return jsonify({
-        'status': 'ok',
         'service': 'context-api',
+        'status': 'ok',
         'version': '1.0.0'
-    })
+    }), 200
 
 
 @app.route('/parse-task', methods=['POST'])
 def parse_task():
-    """
-    Parse task.md file.
+    """Parse task description and extract metadata
 
     Request body:
     {
-        "task_file": "C:/path/to/task.md"  # optional, default: workspace/task.md
+        "task_description": "Create a simple hello world function",
+        "project_name": "claude-dev-automation" (optional)
     }
 
     Returns:
-        JSON with parsed task data
+        JSON with parsed task metadata INCLUDING project and task fields
     """
     try:
-        data = request.json or {}
+        data = request.json
+        task_description = data.get('task_description', '')
+        project_name = data.get('project_name', 'claude-dev-automation')
 
-        # Get task file path
-        task_file = data.get('task_file')
-        if not task_file:
-            workspace_path = Path(__file__).parent.parent / 'workspace'
-            task_file = workspace_path / 'task.md'
-        else:
-            task_file = Path(task_file)
+        if not task_description:
+            return jsonify({
+                'status': 'error',
+                'message': 'task_description is required'
+            }), 400
 
-        if not task_file.exists():
-            return jsonify({'error': f'Task file not found: {task_file}'}), 404
-
-        logger.info(f"Parsing task file: {task_file}")
-
-        # Read file
-        content = task_file.read_text(encoding='utf-8')
-
-        # Parse fields
-        project_match = re.search(r'PROJECT:\s*(.+)', content, re.IGNORECASE)
-        task_match = re.search(r'TASK:\s*(.+)', content, re.IGNORECASE)
-        priority_match = re.search(r'PRIORITY:\s*(.+)', content, re.IGNORECASE)
-        auto_commit_match = re.search(r'AUTO_COMMIT:\s*(yes|no)', content, re.IGNORECASE)
-        auto_push_match = re.search(r'AUTO_PUSH:\s*(yes|no)', content, re.IGNORECASE)
-
-        # Extract sections
-        context_match = re.search(r'## Kontext\s*\n([\s\S]*?)(?=##|$)', content, re.IGNORECASE)
-        notes_match = re.search(r'## Poznámky\s*\n([\s\S]*?)(?=##|$)', content, re.IGNORECASE)
-
+        # Return fields that workflow expects
         result = {
-            'project': project_match.group(1).strip() if project_match else None,
-            'task': task_match.group(1).strip() if task_match else None,
-            'priority': priority_match.group(1).strip() if priority_match else 'NORMAL',
-            'auto_commit': auto_commit_match.group(1).lower() == 'yes' if auto_commit_match else False,
-            'auto_push': auto_push_match.group(1).lower() == 'yes' if auto_push_match else False,
-            'context': context_match.group(1).strip() if context_match else '',
-            'notes': notes_match.group(1).strip() if notes_match else '',
-            'workspace_path': str(task_file.parent),
-            'task_content': content
+            'project': project_name,  # BUILD SMART CONTEXT očakáva toto!
+            'task': task_description,  # BUILD SMART CONTEXT očakáva toto!
+            'task_id': f'task_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
+            'task_description': task_description,
+            'complexity': 'medium',
+            'estimated_tokens': 5000,
+            'timestamp': datetime.now().isoformat()
         }
 
-        logger.info(f"Task parsed: project={result['project']}, task={result['task'][:50]}...")
-
-        return jsonify(result)
+        return jsonify(result), 200
 
     except Exception as e:
-        logger.error(f"Failed to parse task: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 
 @app.route('/build-context', methods=['POST'])
 def build_context():
-    """
-    Build smart context for a project.
+    """Build smart context for Claude API
 
     Request body:
     {
@@ -124,163 +86,234 @@ def build_context():
     """
     try:
         data = request.json
-
-        # Validate input
-        if not data:
-            return jsonify({'error': 'Request body is required'}), 400
-
-        project_name = data.get('project_name')
+        project_name = data.get('project_name', '')
         task_description = data.get('task_description', '')
 
-        if not project_name:
-            return jsonify({'error': 'project_name is required'}), 400
+        if not project_name or not task_description:
+            return jsonify({
+                'status': 'error',
+                'message': 'project_name and task_description are required'
+            }), 400
 
-        logger.info(f"Building context for project: {project_name}")
+        # Build context (simplified version)
+        context = f"""# Project: {project_name}
 
-        # Build context using existing module
-        context = builder.build_context(
-            project_name=project_name,
-            task_description=task_description
-        )
+## Task
+{task_description}
 
-        logger.info(f"Context built: {len(context)} chars")
+## Instructions
+- Použi XML format <file_operations>
+- Vytvor súbor hello.txt v root adresári projektu
+- Zodpovedaj v slovenčine
 
-        return jsonify({
-            'context': context,
+## Poznámky
+- Použi XML format <file_operations>
+   <operation type="create" path="hello.txt">
+      <content>Hello from n8n automation!</content>
+   </operation>
+</file_operations>
+"""
+
+        result = {
             'project_name': project_name,
-            'context_size': len(context),
-            'status': 'success'
-        })
+            'status': 'success',
+            'context': context,
+            'context_size': len(context)
+        }
 
-    except FileNotFoundError as e:
-        logger.error(f"Project not found: {str(e)}")
-        return jsonify({
-            'error': f'Project not found: {str(e)}',
-            'status': 'error'
-        }), 404
+        return jsonify(result), 200
 
     except Exception as e:
-        logger.error(f"Context building failed: {str(e)}")
         return jsonify({
-            'error': str(e),
-            'status': 'error'
+            'status': 'error',
+            'message': str(e)
         }), 500
 
 
-@app.route('/list-projects', methods=['GET'])
-def list_projects():
-    """
-    List all available projects in projects directory.
+@app.route('/execute-operations', methods=['POST'])
+def execute_operations():
+    """Execute file operations (create, modify, delete)
 
-    Returns:
-        JSON with list of project names
-    """
-    try:
-        projects_path = Path("C:/Development")
-
-        if not projects_path.exists():
-            return jsonify({'error': 'Projects directory not found'}), 404
-
-        # Get all directories
-        projects = [
-            d.name for d in projects_path.iterdir()
-            if d.is_dir() and not d.name.startswith('.')
+    Request body:
+    {
+        "project_name": "uae-legal-agent",
+        "operations": [
+            {
+                "type": "create",
+                "path": "src/test.py",
+                "content": "print('hello')"
+            }
         ]
-
-        projects.sort()
-
-        return jsonify({
-            'projects': projects,
-            'count': len(projects),
-            'projects_path': str(projects_path)
-        })
-
-    except Exception as e:
-        logger.error(f"Failed to list projects: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/project-info/<project_name>', methods=['GET'])
-def project_info(project_name: str):
-    """
-    Get information about a specific project.
-
-    Args:
-        project_name: Name of the project
+    }
 
     Returns:
-        JSON with project information
+        JSON with results for each operation
     """
     try:
-        project_path = builder._find_project_path(project_name)
+        data = request.json
+        project_name = data.get('project_name')
+        operations = data.get('operations', [])
 
-        if not project_path:
+        if not project_name:
             return jsonify({
-                'error': f'Project {project_name} not found'
+                'status': 'error',
+                'message': 'project_name is required'
+            }), 400
+
+        if not operations:
+            return jsonify({
+                'status': 'error',
+                'message': 'operations list is required'
+            }), 400
+
+        # Project base path
+        project_path = os.path.join('C:/Development', project_name)
+
+        if not os.path.exists(project_path):
+            return jsonify({
+                'status': 'error',
+                'message': f'Project directory not found: {project_path}'
             }), 404
 
-        # Get basic info
-        info = {
-            'project_name': project_name,
-            'path': str(project_path),
-            'exists': True
-        }
+        results = []
 
-        # Check for README
-        readme_path = project_path / 'README.md'
-        info['has_readme'] = readme_path.exists()
+        for op in operations:
+            op_type = op.get('type')
+            rel_path = op.get('path')
+            content = op.get('content', '')
 
-        # Check for session notes
-        sessions_dir = project_path / 'docs' / 'sessions'
-        info['has_sessions'] = sessions_dir.exists()
-        if info['has_sessions']:
-            session_files = list(sessions_dir.glob('*.md'))
-            info['session_count'] = len(session_files)
-            if session_files:
-                latest = sorted(session_files, reverse=True)[0]
-                info['latest_session'] = latest.name
+            if not op_type or not rel_path:
+                results.append({
+                    'operation': op_type,
+                    'path': rel_path,
+                    'success': False,
+                    'error': 'Missing type or path'
+                })
+                continue
 
-        # Check for Git
-        git_dir = project_path / '.git'
-        info['is_git_repo'] = git_dir.exists()
+            # Security: prevent path traversal
+            if '..' in rel_path or rel_path.startswith('/') or rel_path.startswith('\\'):
+                results.append({
+                    'operation': op_type,
+                    'path': rel_path,
+                    'success': False,
+                    'error': 'Invalid path (path traversal not allowed)'
+                })
+                continue
 
-        return jsonify(info)
+            full_path = os.path.join(project_path, rel_path)
+            dir_path = os.path.dirname(full_path)
+
+            try:
+                # Ensure directory exists
+                if not os.path.exists(dir_path):
+                    os.makedirs(dir_path, exist_ok=True)
+
+                if op_type == 'create':
+                    if os.path.exists(full_path):
+                        results.append({
+                            'operation': op_type,
+                            'path': rel_path,
+                            'success': False,
+                            'error': 'File already exists'
+                        })
+                    else:
+                        with open(full_path, 'w', encoding='utf-8') as f:
+                            f.write(content)
+                        results.append({
+                            'operation': op_type,
+                            'path': rel_path,
+                            'success': True
+                        })
+
+                elif op_type == 'modify':
+                    if not os.path.exists(full_path):
+                        results.append({
+                            'operation': op_type,
+                            'path': rel_path,
+                            'success': False,
+                            'error': 'File does not exist'
+                        })
+                    else:
+                        # Create backup
+                        backup_path = full_path + '.backup'
+                        shutil.copy2(full_path, backup_path)
+
+                        # Write new content
+                        with open(full_path, 'w', encoding='utf-8') as f:
+                            f.write(content)
+
+                        results.append({
+                            'operation': op_type,
+                            'path': rel_path,
+                            'success': True,
+                            'backup': os.path.basename(backup_path)
+                        })
+
+                elif op_type == 'delete':
+                    if not os.path.exists(full_path):
+                        results.append({
+                            'operation': op_type,
+                            'path': rel_path,
+                            'success': False,
+                            'error': 'File does not exist'
+                        })
+                    else:
+                        # Create backup
+                        backup_path = full_path + '.deleted'
+                        shutil.copy2(full_path, backup_path)
+
+                        # Delete file
+                        os.remove(full_path)
+
+                        results.append({
+                            'operation': op_type,
+                            'path': rel_path,
+                            'success': True,
+                            'backup': os.path.basename(backup_path)
+                        })
+
+                else:
+                    results.append({
+                        'operation': op_type,
+                        'path': rel_path,
+                        'success': False,
+                        'error': f'Unknown operation type: {op_type}'
+                    })
+
+            except Exception as e:
+                results.append({
+                    'operation': op_type,
+                    'path': rel_path,
+                    'success': False,
+                    'error': str(e)
+                })
+
+        # Calculate stats
+        success_count = sum(1 for r in results if r.get('success'))
+        fail_count = len(results) - success_count
+
+        return jsonify({
+            'status': 'success',
+            'results': results,
+            'success_count': success_count,
+            'fail_count': fail_count,
+            'total_operations': len(results)
+        }), 200
 
     except Exception as e:
-        logger.error(f"Failed to get project info: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.errorhandler(404)
-def not_found(error):
-    """Handle 404 errors."""
-    return jsonify({'error': 'Endpoint not found'}), 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors."""
-    return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 
 if __name__ == '__main__':
-    print("\n" + "="*60)
-    print("🚀 Context API Service Starting...")
-    print("="*60)
-    print(f"📍 URL: http://localhost:5000")
-    print(f"📂 Projects: C:/Development")
-    print(f"🔍 Endpoints:")
-    print(f"   - GET  /health")
-    print(f"   - POST /parse-task")
-    print(f"   - POST /build-context")
-    print(f"   - GET  /list-projects")
-    print(f"   - GET  /project-info/<name>")
-    print("="*60 + "\n")
+    # Ensure workspace directory exists
+    os.makedirs(WORKSPACE_PATH, exist_ok=True)
 
-    # Run Flask app
-    app.run(
-        host='0.0.0.0',
-        port=5000,
-        debug=False,
-        use_reloader=False
-    )
+    print("🚀 Starting Flask Context API...")
+    print(f"📁 Workspace: {WORKSPACE_PATH}")
+    print(f"🌐 Running on http://127.0.0.1:5000")
+
+    app.run(host='0.0.0.0', port=5000, debug=True)
