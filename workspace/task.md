@@ -1,11 +1,11 @@
-PROJECT: claude-dev-automation
-TASK: Zhodnoť súčasný stav projektu a povedz mi 3 najväčšie silné stránky systému
+PROJECT: uae-legal-agent
+TASK: Chcem pokračovať v prácu v tomto projekte napíš mi aká je nasledujúca úloha*
 PRIORITY: NORMAL
 AUTO_COMMIT: no
 AUTO_PUSH: no
 
 ## Kontext
-Potrebujem analýzu projektu bez úpravy súborov. Chcem vedieť čo systém robí dobre.
+
 
 ## Poznámky
-Tento test overí či sa Claude's response zobrazuje v response.md.
+Do response okrem Token Usage vypíš aj finančný zostatok aby som vedel kedy treba doplnit.

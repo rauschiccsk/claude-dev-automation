@@ -1,254 +1,261 @@
 """
-file_operations.py - File operation handler
-Extracts and executes file operations from Claude's responses
+File Operations Handler
+Extracts and executes file operations from Claude's responses.
 """
 
 import re
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Any, Optional
+import xml.etree.ElementTree as ET
 
 
-class FileOperations:
-    """Handles file creation, modification, and deletion operations."""
-
-    def __init__(self):
-        """Initialize file operations handler."""
-        self.supported_operations = ['CREATE', 'MODIFY', 'DELETE']
+class FileOperationExtractor:
+    """Extracts file operations from Claude's XML-formatted responses."""
 
     def extract_operations(self, response: str) -> List[Dict[str, Any]]:
         """
-        Extract file operations from Claude's response.
+        Extract file operations from response.
 
         Args:
-            response: Claude's text response
+            response: Claude's response text
 
         Returns:
-            List of operation dictionaries
+            List of operation dictionaries with keys:
+            - type: 'create', 'modify', or 'delete'
+            - path: relative file path
+            - content: file content (for create/modify)
         """
         operations = []
 
-        # Pattern to match file operations
-        # FILE_OPERATION: CREATE/MODIFY/DELETE
-        # PATH: relative/path/to/file.py
-        # CONTENT:
-        # ```language
-        # ... content ...
-        # ```
+        # Try to find <file_operations> XML block
+        pattern = r'<file_operations>(.*?)</file_operations>'
+        matches = re.findall(pattern, response, re.DOTALL)
 
-        pattern = r'FILE_OPERATION:\s*(CREATE|MODIFY|DELETE)\s*\nPATH:\s*([^\n]+)\s*\n(?:CONTENT:\s*\n```[\w]*\n(.*?)\n```)?'
-
-        matches = re.finditer(pattern, response, re.DOTALL | re.MULTILINE)
+        if not matches:
+            return operations
 
         for match in matches:
-            operation = match.group(1).strip()
-            path = match.group(2).strip()
-            content = match.group(3) if match.group(3) else None
+            # Wrap in root element for XML parsing
+            xml_text = f'<file_operations>{match}</file_operations>'
 
-            if content:
-                content = content.strip()
+            try:
+                root = ET.fromstring(xml_text)
 
-            operations.append({
-                'operation': operation,
-                'path': path,
-                'content': content
-            })
+                for op_elem in root.findall('operation'):
+                    op_type = op_elem.get('type', '').lower()
+                    op_path = op_elem.get('path', '')
+
+                    if not op_type or not op_path:
+                        continue
+
+                    operation = {
+                        'type': op_type,
+                        'path': op_path
+                    }
+
+                    # Extract content for create/modify
+                    if op_type in ['create', 'modify']:
+                        content_elem = op_elem.find('content')
+                        if content_elem is not None:
+                            operation['content'] = content_elem.text or ''
+
+                    operations.append(operation)
+
+            except ET.ParseError as e:
+                print(f"[WARNING] Failed to parse XML: {e}")
+                continue
 
         return operations
+
+    def validate_operation(self, operation: Dict[str, Any]) -> bool:
+        """
+        Validate file operation.
+
+        Args:
+            operation: Operation dictionary
+
+        Returns:
+            True if valid, False otherwise
+        """
+        # Check required fields
+        if 'type' not in operation or 'path' not in operation:
+            return False
+
+        # Check type
+        if operation['type'] not in ['create', 'modify', 'delete']:
+            return False
+
+        # Check content for create/modify
+        if operation['type'] in ['create', 'modify']:
+            if 'content' not in operation:
+                return False
+
+        # Check path safety (no absolute paths, no parent directory escapes)
+        path = operation['path']
+        if path.startswith('/') or path.startswith('\\'):
+            return False
+        if '..' in path:
+            return False
+
+        return True
+
+
+class FileOperationExecutor:
+    """Executes file operations safely."""
 
     def execute_operation(
         self,
         operation: Dict[str, Any],
-        base_path: Path
-    ) -> Optional[Dict[str, Any]]:
+        project_path: str
+    ) -> bool:
         """
         Execute a single file operation.
 
         Args:
-            operation: Operation dictionary with 'operation', 'path', 'content'
-            base_path: Base project path
+            operation: Operation dictionary from extractor
+            project_path: Base path for project
 
         Returns:
-            Result dictionary or None on failure
+            True if successful, False otherwise
         """
-        op_type = operation['operation']
-        rel_path = operation['path']
-        content = operation.get('content')
-
-        # Build full path
-        full_path = base_path / rel_path
-
         try:
-            if op_type == 'CREATE':
-                return self._create_file(full_path, content)
+            # Validate operation
+            extractor = FileOperationExtractor()
+            if not extractor.validate_operation(operation):
+                print(f"[ERROR] Invalid operation: {operation}")
+                return False
 
-            elif op_type == 'MODIFY':
-                return self._modify_file(full_path, content)
+            # Build full path
+            project_path = Path(project_path)
+            file_path = project_path / operation['path']
 
-            elif op_type == 'DELETE':
-                return self._delete_file(full_path)
+            # Execute based on type
+            if operation['type'] == 'create':
+                return self._create_file(file_path, operation['content'])
 
-            else:
-                return {
-                    'operation': op_type,
-                    'path': str(rel_path),
-                    'success': False,
-                    'error': f"Unsupported operation: {op_type}"
-                }
+            elif operation['type'] == 'modify':
+                return self._modify_file(file_path, operation['content'])
+
+            elif operation['type'] == 'delete':
+                return self._delete_file(file_path)
+
+            return False
 
         except Exception as e:
-            return {
-                'operation': op_type,
-                'path': str(rel_path),
-                'success': False,
-                'error': str(e)
-            }
+            print(f"[ERROR] Operation execution failed: {e}")
+            return False
 
-    def _create_file(self, path: Path, content: str) -> Dict[str, Any]:
-        """Create a new file."""
-        if path.exists():
-            return {
-                'operation': 'CREATE',
-                'path': str(path),
-                'success': False,
-                'error': 'File already exists'
-            }
+    def _create_file(self, file_path: Path, content: str) -> bool:
+        """Create new file."""
+        try:
+            # Check if file already exists
+            if file_path.exists():
+                print(f"[ERROR] File already exists: {file_path}")
+                return False
 
-        if not content:
-            return {
-                'operation': 'CREATE',
-                'path': str(path),
-                'success': False,
-                'error': 'No content provided'
-            }
+            # Create parent directories
+            file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Create parent directories if needed
-        path.parent.mkdir(parents=True, exist_ok=True)
+            # Write content
+            file_path.write_text(content, encoding='utf-8')
+            print(f"[OK] Created: {file_path}")
+            return True
 
-        # Write file
-        path.write_text(content, encoding='utf-8')
+        except Exception as e:
+            print(f"[ERROR] Failed to create file: {e}")
+            return False
 
-        return {
-            'operation': 'CREATE',
-            'path': str(path),
-            'success': True,
-            'content': content,
-            'size': len(content)
-        }
-
-    def _modify_file(self, path: Path, content: str) -> Dict[str, Any]:
+    def _modify_file(self, file_path: Path, content: str) -> bool:
         """Modify existing file."""
-        if not path.exists():
-            # If file doesn't exist, create it instead
-            return self._create_file(path, content)
+        try:
+            # Check if file exists
+            if not file_path.exists():
+                print(f"[ERROR] File does not exist: {file_path}")
+                return False
 
-        if not content:
-            return {
-                'operation': 'MODIFY',
-                'path': str(path),
-                'success': False,
-                'error': 'No content provided'
-            }
+            # Create backup
+            backup_path = file_path.with_suffix(file_path.suffix + '.backup')
+            backup_path.write_text(file_path.read_text(encoding='utf-8'), encoding='utf-8')
+            print(f"[INFO] Backup created: {backup_path}")
 
-        # Backup original content
-        original_content = path.read_text(encoding='utf-8')
+            # Write new content
+            file_path.write_text(content, encoding='utf-8')
+            print(f"[OK] Modified: {file_path}")
+            return True
 
-        # Write new content
-        path.write_text(content, encoding='utf-8')
+        except Exception as e:
+            print(f"[ERROR] Failed to modify file: {e}")
+            return False
 
-        return {
-            'operation': 'MODIFY',
-            'path': str(path),
-            'success': True,
-            'content': content,
-            'size': len(content),
-            'original_size': len(original_content)
-        }
+    def _delete_file(self, file_path: Path) -> bool:
+        """Delete file."""
+        try:
+            # Check if file exists
+            if not file_path.exists():
+                print(f"[ERROR] File does not exist: {file_path}")
+                return False
 
-    def _delete_file(self, path: Path) -> Dict[str, Any]:
-        """Delete a file."""
-        if not path.exists():
-            return {
-                'operation': 'DELETE',
-                'path': str(path),
-                'success': False,
-                'error': 'File does not exist'
-            }
+            # Create backup before deleting
+            backup_path = file_path.with_suffix(file_path.suffix + '.deleted')
+            backup_path.write_text(file_path.read_text(encoding='utf-8'), encoding='utf-8')
+            print(f"[INFO] Backup created: {backup_path}")
 
-        # Read content before deletion (for logging)
-        content = path.read_text(encoding='utf-8')
+            # Delete file
+            file_path.unlink()
+            print(f"[OK] Deleted: {file_path}")
+            return True
 
-        # Delete file
-        path.unlink()
-
-        return {
-            'operation': 'DELETE',
-            'path': str(path),
-            'success': True,
-            'deleted_size': len(content)
-        }
+        except Exception as e:
+            print(f"[ERROR] Failed to delete file: {e}")
+            return False
 
 
-# Example usage and testing
+# Test section
 if __name__ == "__main__":
-    print("🧪 Testing FileOperations...")
+    print("\n[TEST] Testing File Operations...")
 
-    # Sample Claude response with file operations
-    sample_response = """
-Vykonám nasledujúce zmeny v projekte:
+    # Test XML response
+    test_response = """
+Here is my analysis...
 
-FILE_OPERATION: CREATE
-PATH: tests/test_example.py
-CONTENT:
-```python
-import pytest
+<file_operations>
+  <operation type="create" path="test/new_file.py">
+    <content>
+# Test file
+print("Hello World")
+    </content>
+  </operation>
+  <operation type="modify" path="test/existing.py">
+    <content>
+# Modified content
+print("Updated")
+    </content>
+  </operation>
+</file_operations>
 
-def test_example():
-    assert True
-```
-
-FILE_OPERATION: MODIFY
-PATH: src/main.py
-CONTENT:
-```python
-def main():
-    print("Modified version")
-    return 0
-
-if __name__ == "__main__":
-    main()
-```
-
-FILE_OPERATION: DELETE
-PATH: old/deprecated.py
-
-Tieto zmeny vylepšia štruktúru projektu.
+That's my recommendation.
 """
 
-    # Test extraction
-    file_ops = FileOperations()
-    operations = file_ops.extract_operations(sample_response)
+    try:
+        # Test extraction
+        extractor = FileOperationExtractor()
+        operations = extractor.extract_operations(test_response)
 
-    print(f"\n✅ Extracted {len(operations)} operations:")
-    for i, op in enumerate(operations, 1):
-        print(f"\n{i}. Operation: {op['operation']}")
-        print(f"   Path: {op['path']}")
-        if op.get('content'):
-            print(f"   Content: {len(op['content'])} chars")
+        print(f"\n[OK] Extracted {len(operations)} operations:")
+        for i, op in enumerate(operations, 1):
+            print(f"     {i}. {op['type'].upper()}: {op['path']}")
+            if 'content' in op:
+                print(f"        Content length: {len(op['content'])} chars")
 
-    # Test execution (in temp directory)
-    import tempfile
-    with tempfile.TemporaryDirectory() as tmpdir:
-        base_path = Path(tmpdir)
-
-        print(f"\n📝 Testing execution in: {tmpdir}")
-
+        # Test validation
+        print(f"\n[INFO] Testing validation...")
         for op in operations:
-            result = file_ops.execute_operation(op, base_path)
+            valid = extractor.validate_operation(op)
+            print(f"     Operation {op['path']}: {'[OK]' if valid else '[INVALID]'}")
 
-            status = "✅" if result['success'] else "❌"
-            print(f"{status} {result['operation']}: {result['path']}")
+        print("\n[SUCCESS] File operations test completed!")
 
-            if not result['success']:
-                print(f"   Error: {result['error']}")
-
-    print("\n✅ All tests completed!")
+    except Exception as e:
+        print(f"\n[ERROR] Test failed: {e}")
+        import traceback
+        traceback.print_exc()

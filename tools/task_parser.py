@@ -1,207 +1,140 @@
 """
-task_parser.py - Task file parser
-Parses task.md files into structured task data
+Task Parser
+Parses task.md files and extracts task information.
 """
 
 import re
-from typing import Dict, Optional, Any
+from pathlib import Path
+from typing import Dict, Any, Optional
 
 
 class TaskParser:
-    """Parses task.md files into structured data."""
+    """Parses task.md files."""
 
-    def __init__(self):
-        """Initialize task parser."""
-        self.required_fields = ['PROJECT', 'TASK', 'PRIORITY']
-
-    def parse(self, content: str) -> Optional[Dict[str, Any]]:
+    def parse_task(self, task_file: str) -> Dict[str, Any]:
         """
-        Parse task.md content into structured data.
-
-        Expected format:
-        ```
-        PROJECT: project-name
-        TASK: Task description
-        PRIORITY: LOW/NORMAL/HIGH
-        AUTO_COMMIT: yes/no
-        AUTO_PUSH: yes/no
-
-        ## Kontext
-        Context text here...
-
-        ## Poznámky
-        Notes here...
-        ```
+        Parse task.md file.
 
         Args:
-            content: Content of task.md file
+            task_file: Path to task.md file
 
         Returns:
-            Dictionary with parsed task data or None on error
+            Dictionary with task information:
+            {
+                'project': str,
+                'task': str,
+                'priority': str,
+                'auto_commit': bool,
+                'auto_push': bool,
+                'context': str,
+                'notes': str
+            }
         """
-        try:
-            task_data = {}
+        task_path = Path(task_file)
 
-            # Parse header fields
-            lines = content.split('\n')
+        if not task_path.exists():
+            raise FileNotFoundError(f"Task file not found: {task_file}")
 
-            for line in lines:
-                line = line.strip()
+        content = task_path.read_text(encoding='utf-8')
 
-                # Parse key: value pairs
-                if ':' in line and not line.startswith('#'):
-                    key, value = line.split(':', 1)
-                    key = key.strip().upper()
-                    value = value.strip()
+        # Parse header fields
+        task_data = {
+            'project': self._extract_field(content, 'PROJECT'),
+            'task': self._extract_field(content, 'TASK'),
+            'priority': self._extract_field(content, 'PRIORITY', 'NORMAL'),
+            'auto_commit': self._extract_bool(content, 'AUTO_COMMIT', False),
+            'auto_push': self._extract_bool(content, 'AUTO_PUSH', False),
+            'context': self._extract_section(content, 'Kontext'),
+            'notes': self._extract_section(content, 'Poznámky')
+        }
 
-                    if key == 'PROJECT':
-                        task_data['project'] = value
+        # Validate required fields
+        if not task_data['project']:
+            raise ValueError("PROJECT field is required in task.md")
+        if not task_data['task']:
+            raise ValueError("TASK field is required in task.md")
 
-                    elif key == 'TASK':
-                        task_data['task'] = value
+        return task_data
 
-                    elif key == 'PRIORITY':
-                        priority = value.upper()
-                        if priority not in ['LOW', 'NORMAL', 'HIGH']:
-                            priority = 'NORMAL'
-                        task_data['priority'] = priority
-
-                    elif key == 'AUTO_COMMIT':
-                        task_data['auto_commit'] = value.lower() in ['yes', 'true', '1']
-
-                    elif key == 'AUTO_PUSH':
-                        task_data['auto_push'] = value.lower() in ['yes', 'true', '1']
-
-            # Parse sections (## Kontext, ## Poznámky)
-            task_data['context'] = self._extract_section(content, 'Kontext')
-            task_data['notes'] = self._extract_section(content, 'Poznámky')
-
-            # Validate required fields
-            for field in self.required_fields:
-                if field.lower() not in task_data:
-                    print(f"⚠️  Missing required field: {field}")
-                    return None
-
-            # Set defaults
-            task_data.setdefault('auto_commit', False)
-            task_data.setdefault('auto_push', False)
-            task_data.setdefault('context', '')
-            task_data.setdefault('notes', '')
-
-            return task_data
-
-        except Exception as e:
-            print(f"❌ Parse error: {e}")
-            return None
-
-    def _extract_section(self, content: str, section_name: str) -> str:
-        """
-        Extract content of a markdown section.
-
-        Args:
-            content: Full markdown content
-            section_name: Section header name (without ##)
-
-        Returns:
-            Section content or empty string
-        """
-        # Pattern: ## Section_name followed by content until next ## or end
-        pattern = rf'##\s+{re.escape(section_name)}\s*\n(.*?)(?=\n##|\Z)'
-
-        match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+    def _extract_field(self, content: str, field_name: str, default: str = '') -> str:
+        """Extract single-line field value."""
+        pattern = rf'^{field_name}:\s*(.+)$'
+        match = re.search(pattern, content, re.MULTILINE | re.IGNORECASE)
 
         if match:
             return match.group(1).strip()
 
+        return default
+
+    def _extract_bool(self, content: str, field_name: str, default: bool = False) -> bool:
+        """Extract boolean field value."""
+        value = self._extract_field(content, field_name, '').lower()
+
+        if value in ['yes', 'true', '1', 'ano']:
+            return True
+        elif value in ['no', 'false', '0', 'nie']:
+            return False
+
+        return default
+
+    def _extract_section(self, content: str, section_name: str) -> str:
+        """Extract multi-line section content."""
+        # Match section header and content until next section or end
+        pattern = rf'##\s+{section_name}\s*\n(.*?)(?=##|\Z)'
+        match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+
+        if match:
+            section_content = match.group(1).strip()
+            return section_content if section_content else ''
+
         return ''
 
-    def validate(self, task_data: Dict[str, Any]) -> bool:
-        """
-        Validate parsed task data.
 
-        Args:
-            task_data: Parsed task dictionary
-
-        Returns:
-            True if valid, False otherwise
-        """
-        # Check required fields
-        for field in self.required_fields:
-            if field.lower() not in task_data:
-                print(f"❌ Validation failed: Missing {field}")
-                return False
-
-        # Check priority value
-        if task_data['priority'] not in ['LOW', 'NORMAL', 'HIGH']:
-            print(f"❌ Validation failed: Invalid priority '{task_data['priority']}'")
-            return False
-
-        # Check project name format
-        project = task_data['project']
-        if not re.match(r'^[a-zA-Z0-9_-]+$', project):
-            print(f"❌ Validation failed: Invalid project name '{project}'")
-            return False
-
-        return True
-
-
-# Example usage and testing
+# Test section
 if __name__ == "__main__":
-    print("[TEST] Testing TaskParser...\n")
+    print("\n[TEST] Testing TaskParser...")
 
-    # Sample task.md content
-    sample_task = """
-PROJECT: claude-dev-automation
-TASK: Implementuj nový feature pre automatické testovanie
+    # Create test task.md
+    test_content = """PROJECT: test-project
+TASK: This is a test task
 PRIORITY: HIGH
 AUTO_COMMIT: yes
 AUTO_PUSH: no
 
 ## Kontext
-Potrebujeme pridať automatické testovanie do CI/CD pipeline.
-Testy by mali pokrývať všetky základné funkcie systému.
+This is context information.
+Multiple lines are supported.
 
 ## Poznámky
-- Použiť pytest framework
-- Minimálne 80% code coverage
-- Integrovať s GitHub Actions
+Some notes here.
+- Note 1
+- Note 2
 """
 
-    # Test parsing
-    parser = TaskParser()
-    task_data = parser.parse(sample_task)
+    try:
+        # Create temporary test file
+        test_file = Path("test_task.md")
+        test_file.write_text(test_content, encoding='utf-8')
 
-    if task_data:
-        print("[OK] Task parsed successfully:\n")
-        print(f"     Project: {task_data['project']}")
-        print(f"     Task: {task_data['task']}")
-        print(f"     Priority: {task_data['priority']}")
-        print(f"     Auto-commit: {task_data['auto_commit']}")
-        print(f"     Auto-push: {task_data['auto_push']}")
-        print(f"\n     Context: {task_data['context'][:50]}...")
-        print(f"     Notes: {task_data['notes'][:50]}...")
+        # Parse task
+        parser = TaskParser()
+        task = parser.parse_task(str(test_file))
 
-        # Test validation
-        print(f"\n[OK] Validation: {parser.validate(task_data)}")
-    else:
-        print("[ERROR] Failed to parse task")
+        print(f"\n[OK] Task parsed successfully:")
+        print(f"     Project: {task['project']}")
+        print(f"     Task: {task['task']}")
+        print(f"     Priority: {task['priority']}")
+        print(f"     Auto-commit: {task['auto_commit']}")
+        print(f"     Auto-push: {task['auto_push']}")
+        print(f"     Context length: {len(task['context'])} chars")
+        print(f"     Notes length: {len(task['notes'])} chars")
 
-    # Test with invalid task
-    print("\n" + "="*60)
-    print("Testing with invalid task (missing PROJECT):\n")
+        # Cleanup
+        test_file.unlink()
 
-    invalid_task = """
-TASK: Some task
-PRIORITY: NORMAL
+        print("\n[SUCCESS] TaskParser test completed!")
 
-## Kontext
-Context here
-"""
-
-    task_data = parser.parse(invalid_task)
-    if not task_data:
-        print("[OK] Correctly rejected invalid task")
-    else:
-        print("[ERROR] Should have rejected invalid task")
-
-    print("\n[OK] All tests completed!")
+    except Exception as e:
+        print(f"\n[ERROR] Test failed: {e}")
+        import traceback
+        traceback.print_exc()

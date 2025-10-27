@@ -1,32 +1,38 @@
 """
-config_manager.py - Configuration management
-Loads and manages configuration from config.json and .env files
+Configuration Manager
+Handles loading and managing configuration.
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Dict, Any, Optional
-from dotenv import load_dotenv
 
 
 class ConfigManager:
-    """Manages configuration from config.json and environment variables."""
+    """Manages configuration loading and validation."""
 
-    def __init__(self, config_path: str = "workspace/config.json"):
+    DEFAULT_CONFIG = {
+        'workspace_path': 'workspace',
+        'projects_path': 'C:/Development',
+        'model': 'claude-sonnet-4-5-20250929',
+        'max_tokens': 8000
+    }
+
+    def __init__(self, workspace_path: Optional[str] = None):
         """
-        Initialize configuration manager.
+        Initialize config manager.
 
         Args:
-            config_path: Path to config.json file
+            workspace_path: Path to workspace directory (optional)
         """
-        self.config_path = Path(config_path)
-        self.workspace_path = self.config_path.parent
-        self.env_path = self.workspace_path / '.env'
+        if workspace_path:
+            self.workspace_path = Path(workspace_path)
+        else:
+            # Try to find workspace relative to script
+            script_dir = Path(__file__).parent
+            self.workspace_path = script_dir.parent / 'workspace'
 
-        # Load environment variables from .env
-        if self.env_path.exists():
-            load_dotenv(self.env_path)
+        self.config_file = self.workspace_path / 'config.json'
 
     def load_config(self) -> Dict[str, Any]:
         """
@@ -35,203 +41,97 @@ class ConfigManager:
         Returns:
             Configuration dictionary
         """
-        if not self.config_path.exists():
-            print(f"⚠️  Config file not found: {self.config_path}")
-            return self._default_config()
+        if not self.config_file.exists():
+            print(f"[WARNING] Config file not found: {self.config_file}")
+            print(f"[INFO] Using default configuration")
+            return self.DEFAULT_CONFIG.copy()
 
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+            with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
 
-            # Merge with environment variables
-            config = self._merge_env_vars(config)
+            # Merge with defaults (in case some keys are missing)
+            full_config = self.DEFAULT_CONFIG.copy()
+            full_config.update(config)
 
-            return config
+            print(f"[OK] Config loaded from: {self.config_file}")
+            return full_config
 
-        except json.JSONDecodeError as e:
-            print(f"❌ Invalid JSON in config file: {e}")
-            return self._default_config()
         except Exception as e:
-            print(f"❌ Error loading config: {e}")
-            return self._default_config()
+            print(f"[WARNING] Failed to load config: {e}")
+            print(f"[INFO] Using default configuration")
+            return self.DEFAULT_CONFIG.copy()
 
     def save_config(self, config: Dict[str, Any]) -> bool:
         """
         Save configuration to config.json.
 
         Args:
-            config: Configuration dictionary
+            config: Configuration dictionary to save
 
         Returns:
-            True if successful
+            True if successful, False otherwise
         """
         try:
             # Ensure workspace directory exists
-            self.config_path.parent.mkdir(parents=True, exist_ok=True)
+            self.workspace_path.mkdir(parents=True, exist_ok=True)
 
-            # Write config
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=2, ensure_ascii=False)
+            # Save config
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
 
+            print(f"[OK] Config saved to: {self.config_file}")
             return True
 
         except Exception as e:
-            print(f"❌ Error saving config: {e}")
+            print(f"[ERROR] Failed to save config: {e}")
             return False
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get_project_path(self, project_name: str) -> Optional[Path]:
         """
-        Get configuration value by key.
+        Get full path to a project.
 
         Args:
-            key: Configuration key (supports dot notation)
-            default: Default value if key not found
+            project_name: Name of the project
 
         Returns:
-            Configuration value or default
+            Path to project or None if not found
         """
         config = self.load_config()
+        projects_path = Path(config.get('projects_path', 'C:/Development'))
+        project_path = projects_path / project_name
 
-        # Support dot notation (e.g., "api.key")
-        keys = key.split('.')
-        value = config
+        if project_path.exists():
+            return project_path
 
-        for k in keys:
-            if isinstance(value, dict) and k in value:
-                value = value[k]
-            else:
-                return default
-
-        return value
-
-    def _default_config(self) -> Dict[str, Any]:
-        """
-        Get default configuration.
-
-        Returns:
-            Default configuration dictionary
-        """
-        return {
-            'workspace_path': str(self.workspace_path.absolute()),
-            'projects_path': 'C:/Development',
-            'api_key': os.getenv('ANTHROPIC_API_KEY', ''),
-            'model': 'claude-sonnet-4-5-20250929',
-            'max_tokens': 8000,
-            'temperature': 1.0,
-            'auto_commit': False,
-            'auto_push': False
-        }
-
-    def _merge_env_vars(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Merge environment variables into config.
-        Environment variables override config file values.
-
-        Args:
-            config: Configuration from file
-
-        Returns:
-            Merged configuration
-        """
-        # API key from environment
-        if 'ANTHROPIC_API_KEY' in os.environ:
-            config['api_key'] = os.environ['ANTHROPIC_API_KEY']
-
-        # Model from environment
-        if 'CLAUDE_MODEL' in os.environ:
-            config['model'] = os.environ['CLAUDE_MODEL']
-
-        # Max tokens from environment
-        if 'MAX_TOKENS' in os.environ:
-            try:
-                config['max_tokens'] = int(os.environ['MAX_TOKENS'])
-            except ValueError:
-                pass
-
-        return config
-
-    def validate_config(self, config: Dict[str, Any]) -> bool:
-        """
-        Validate configuration.
-
-        Args:
-            config: Configuration to validate
-
-        Returns:
-            True if valid, False otherwise
-        """
-        required_keys = ['api_key', 'workspace_path', 'projects_path']
-
-        for key in required_keys:
-            if key not in config or not config[key]:
-                print(f"❌ Missing required config key: {key}")
-                return False
-
-        # Validate paths exist
-        workspace_path = Path(config['workspace_path'])
-        if not workspace_path.exists():
-            print(f"❌ Workspace path does not exist: {workspace_path}")
-            return False
-
-        projects_path = Path(config['projects_path'])
-        if not projects_path.exists():
-            print(f"⚠️  Projects path does not exist: {projects_path}")
-            # Not critical, just a warning
-
-        return True
+        return None
 
 
-# Example usage and testing
+# Test section
 if __name__ == "__main__":
-    print("[TEST] Testing ConfigManager...\n")
+    print("\n[TEST] Testing ConfigManager...")
 
-    # Test with default config
-    manager = ConfigManager("workspace/config.json")
+    try:
+        # Test loading
+        manager = ConfigManager()
+        config = manager.load_config()
 
-    print("[INFO] Loading configuration...")
-    config = manager.load_config()
+        print(f"\n[OK] Config loaded successfully:")
+        print(f"     Workspace: {config['workspace_path']}")
+        print(f"     Projects: {config['projects_path']}")
+        print(f"     Model: {config['model']}")
+        print(f"     Max tokens: {config['max_tokens']}")
 
-    print("\n[OK] Configuration loaded:")
-    print(f"     Workspace: {config.get('workspace_path', 'N/A')}")
-    print(f"     Projects: {config.get('projects_path', 'N/A')}")
-    print(f"     Model: {config.get('model', 'N/A')}")
-    print(f"     Max tokens: {config.get('max_tokens', 'N/A')}")
+        # Test project path
+        project_path = manager.get_project_path('claude-dev-automation')
+        if project_path:
+            print(f"\n[OK] Project found: {project_path}")
+        else:
+            print(f"\n[INFO] Project not found (expected if not exists)")
 
-    # Check API key (don't print full key)
-    api_key = config.get('api_key', '')
-    if api_key:
-        print(f"     API key: {api_key[:10]}...{api_key[-4:]} (length: {len(api_key)})")
-    else:
-        print(f"     API key: NOT SET [WARNING]")
+        print("\n[SUCCESS] ConfigManager test completed!")
 
-    # Test validation
-    print("\n[INFO] Validating configuration...")
-    is_valid = manager.validate_config(config)
-    print(f"     {'[OK]' if is_valid else '[ERROR]'} Configuration is {'valid' if is_valid else 'invalid'}")
-
-    # Test get method with dot notation
-    print("\n[INFO] Testing get method...")
-    workspace = manager.get('workspace_path', 'default')
-    print(f"     workspace_path: {workspace}")
-
-    # Test save (create sample config)
-    print("\n[INFO] Testing save configuration...")
-    sample_config = {
-        'workspace_path': 'C:/Development/claude-dev-automation/workspace',
-        'projects_path': 'C:/Development',
-        'api_key': 'sk-ant-...',
-        'model': 'claude-sonnet-4-5-20250929',
-        'max_tokens': 8000
-    }
-
-    # Save to test file
-    test_manager = ConfigManager("workspace/test_config.json")
-    success = test_manager.save_config(sample_config)
-    print(f"     {'[OK]' if success else '[ERROR]'} Save {'successful' if success else 'failed'}")
-
-    if success and Path("workspace/test_config.json").exists():
-        # Clean up test file
-        Path("workspace/test_config.json").unlink()
-        print("     [OK] Test file cleaned up")
-
-    print("\n[OK] All tests completed!")
+    except Exception as e:
+        print(f"\n[ERROR] Test failed: {e}")
+        import traceback
+        traceback.print_exc()

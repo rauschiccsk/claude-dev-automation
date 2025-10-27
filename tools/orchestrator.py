@@ -1,14 +1,21 @@
 """
-orchestrator.py - Main orchestration logic for Claude Dev Automation
-Handles task execution, file operations, and response generation
+Main Orchestrator for Claude Dev Automation
+Coordinates all components and manages workflow.
 """
 
-import os
 import sys
-import json
+import os
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+
+# Load .env file FIRST (before any other imports)
+env_path = Path(__file__).parent.parent / 'workspace' / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f"[OK] Loaded .env from: {env_path}")
+else:
+    print(f"[WARNING] .env file not found: {env_path}")
 
 # Add tools directory to Python path
 tools_dir = Path(__file__).parent
@@ -16,230 +23,198 @@ if str(tools_dir) not in sys.path:
     sys.path.insert(0, str(tools_dir))
 
 from claude_runner import ClaudeRunner
-from file_operations import FileOperations
-from response_builder import ResponseBuilder
 from task_parser import TaskParser
 from enhanced_context_builder import EnhancedContextBuilder
+from file_operations import FileOperationExtractor, FileOperationExecutor
 from git_handler import GitHandler
+from response_builder import ResponseBuilder
 from config_manager import ConfigManager
 
 
 class Orchestrator:
-    """Main orchestrator for Claude development automation."""
+    """Main orchestration class that coordinates all components."""
 
-    def __init__(self, config_path: str = "workspace/config.json"):
-        """Initialize orchestrator with configuration."""
-        self.config_manager = ConfigManager(config_path)
+    def __init__(self, workspace_path: Optional[str] = None):
+        """
+        Initialize orchestrator with all components.
+
+        Args:
+            workspace_path: Path to workspace directory (optional)
+        """
+        # Initialize config manager
+        self.config_manager = ConfigManager(workspace_path)
         self.config = self.config_manager.load_config()
 
-        # Initialize components
-        self.claude_runner = ClaudeRunner(self.config['api_key'])
-        self.file_ops = FileOperations()
-        self.response_builder = ResponseBuilder()
+        # Initialize Claude runner (reads API key from .env)
+        self.claude_runner = ClaudeRunner(
+            model=self.config.get('model', 'claude-sonnet-4-5-20250929'),
+            max_tokens=self.config.get('max_tokens', 8000)
+        )
+
+        # Initialize other components
         self.task_parser = TaskParser()
-        self.context_builder = EnhancedContextBuilder()
+        self.context_builder = EnhancedContextBuilder(
+            projects_path=self.config.get('projects_path', 'C:/Development')
+        )
+        self.file_extractor = FileOperationExtractor()
+        self.file_executor = FileOperationExecutor()
         self.git_handler = GitHandler()
+        self.response_builder = ResponseBuilder()
 
-        # Paths
-        self.workspace_path = Path(self.config['workspace_path'])
-        self.task_file = self.workspace_path / "task.md"
-        self.response_file = self.workspace_path / "response.md"
+        # Workspace path
+        self.workspace_path = Path(self.config.get('workspace_path', 'workspace'))
 
-    def execute_task(self) -> Dict[str, Any]:
+    def run_task(self, task_file: str = "task.md") -> Dict[str, Any]:
         """
-        Execute task from task.md file.
+        Execute complete task workflow.
+
+        Args:
+            task_file: Path to task.md file
 
         Returns:
             Dict with execution results
         """
+        print("\n[START] Claude Dev Automation - Orchestrator")
+
         try:
             # 1. Parse task
-            print("[INFO] Parsing task...")
-            task_data = self._load_and_parse_task()
+            print(f"[INFO] Parsing task from: {task_file}")
+            task_path = self.workspace_path / task_file
 
-            if not task_data:
-                return self._error_response("Failed to parse task.md")
+            if not task_path.exists():
+                raise FileNotFoundError(f"Task file not found: {task_path}")
 
-            print(f"[OK] Task parsed: {task_data['project']}")
-            print(f"     Priority: {task_data['priority']}")
+            task = self.task_parser.parse_task(str(task_path))
+            print(f"[OK] Task parsed: {task['project']}")
 
             # 2. Build smart context
-            print("\n[INFO] Building smart context...")
-            context = self._build_context(task_data)
+            print(f"[INFO] Building smart context...")
+            context = self.context_builder.build_context(
+                project_name=task['project'],
+                task_description=task['task']
+            )
             print(f"[OK] Context built: ~{len(context)} chars")
 
-            # 3. Execute with Claude
-            print("\n[INFO] Sending to Claude...")
-            result = self._execute_with_claude(task_data, context)
-
-            if not result or 'response' not in result:
-                return self._error_response("Claude execution failed")
-
-            print(f"[OK] Claude response received: {result.get('usage', {}).get('total_tokens', 0)} tokens")
-
-            # 4. Process file operations (if any)
-            print("\n[INFO] Processing file operations...")
-            file_results = self._process_file_operations(
-                result['response'],
-                task_data['project']
+            # 3. Send to Claude
+            print(f"[INFO] Sending to Claude...")
+            result = self.claude_runner.send_task(
+                task_description=task['task'],
+                context=context,
+                notes=task.get('notes', '')
             )
+            print(f"[OK] Claude response received: {result['usage']['total_tokens']} tokens")
 
-            if file_results:
-                print(f"[OK] Processed {len(file_results)} file operations")
+            # 4. Extract file operations
+            print(f"[INFO] Checking for file operations...")
+            file_ops = self.file_extractor.extract_operations(result['response'])
+
+            file_results = []
+            if file_ops:
+                print(f"[INFO] Found {len(file_ops)} file operations")
+
+                # Execute file operations
+                project_path = self.context_builder._find_project_path(task['project'])
+                if project_path:
+                    for op in file_ops:
+                        try:
+                            success = self.file_executor.execute_operation(
+                                op,
+                                str(project_path)
+                            )
+                            file_results.append({
+                                'operation': op,
+                                'success': success
+                            })
+                        except Exception as e:
+                            print(f"[ERROR] File operation failed: {e}")
+                            file_results.append({
+                                'operation': op,
+                                'success': False,
+                                'error': str(e)
+                            })
             else:
-                print("[INFO] No file operations (analysis only)")
+                print(f"[INFO] No file operations found")
 
-            # 5. Handle Git operations
+            # 5. Git operations (if requested)
             git_status = None
-            if task_data.get('auto_commit', False) and file_results:
-                print("\n[INFO] Committing changes...")
-                git_status = self._handle_git_operations(
-                    task_data,
-                    file_results
-                )
+            if task.get('auto_commit', False) or task.get('auto_push', False):
+                project_path = self.context_builder._find_project_path(task['project'])
+                if project_path and file_results:
+                    print(f"[INFO] Running git operations...")
 
-            # 6. Extract Claude's response text when no files were changed
+                    if task.get('auto_commit', False):
+                        commit_msg = f"Auto-commit: {task['task'][:50]}"
+                        self.git_handler.commit_changes(str(project_path), commit_msg)
+
+                    if task.get('auto_push', False):
+                        self.git_handler.push_changes(str(project_path))
+
+                    git_status = self.git_handler.get_status(str(project_path))
+
+            # 6. Build response
+            print(f"[INFO] Generating response.md...")
+
+            # Only include claude_response if there are no file operations
+            # (if there are file operations, they are already in the response)
             claude_response_text = None
             if not file_results:
-                # Claude provided analysis/recommendations without file changes
                 claude_response_text = result['response']
-                print("[INFO] Analysis-only response (no file changes)")
 
-            # 7. Build and save response
-            print("\n[INFO] Building response.md...")
             response_md = self.response_builder.build_response(
-                task=task_data['task'],
-                priority=task_data['priority'],
-                file_changes=file_results,
-                token_usage=result.get('usage'),
-                timestamp=datetime.now().isoformat(),
+                task=task,
+                usage=result['usage'],
+                file_operations=file_results,
                 git_status=git_status,
-                claude_response=claude_response_text,  # ← FIXED: Pass Claude's response
+                claude_response=claude_response_text,
+                context_size=len(context)
             )
 
-            self._save_response(response_md)
-            print("[OK] Response saved to response.md")
+            # Save response
+            response_path = self.workspace_path / "response.md"
+            response_path.write_text(response_md, encoding='utf-8')
+            print(f"[OK] Response saved to: {response_path}")
+
+            print(f"\n[SUCCESS] Task completed successfully!")
 
             return {
                 'success': True,
-                'task': task_data['task'],
-                'file_count': len(file_results),
-                'tokens_used': result.get('usage', {}).get('total_tokens', 0),
-                'has_analysis': claude_response_text is not None,
+                'task': task,
+                'usage': result['usage'],
+                'file_operations': file_results,
+                'git_status': git_status,
+                'response_file': str(response_path)
             }
 
         except Exception as e:
-            error_msg = f"Orchestration error: {str(e)}"
-            print(f"\n[ERROR] {error_msg}")
-            self._save_response(f"# Error\n\n{error_msg}")
-            return self._error_response(error_msg)
+            print(f"\n[ERROR] Task execution failed: {e}")
+            import traceback
+            traceback.print_exc()
 
-    def _load_and_parse_task(self) -> Optional[Dict[str, Any]]:
-        """Load and parse task from task.md."""
-        if not self.task_file.exists():
-            print(f"❌ Task file not found: {self.task_file}")
-            return None
-
-        task_content = self.task_file.read_text(encoding='utf-8')
-        return self.task_parser.parse(task_content)
-
-    def _build_context(self, task_data: Dict[str, Any]) -> str:
-        """Build smart context for the task."""
-        project_path = self._resolve_project_path(task_data['project'])
-
-        # Build enhanced context with auto-discovery
-        context = self.context_builder.build_context(
-            project_name=task_data['project'],
-            project_path=project_path,
-            task_description=task_data.get('context', ''),
-            additional_notes=task_data.get('notes', '')
-        )
-
-        return context
-
-    def _resolve_project_path(self, project_name: str) -> Path:
-        """Resolve full path to project."""
-        projects_base = Path(self.config.get('projects_path', 'C:/Development'))
-        return projects_base / project_name
-
-    def _execute_with_claude(self, task_data: Dict[str, Any], context: str) -> Dict[str, Any]:
-        """Execute task with Claude API."""
-        return self.claude_runner.execute(
-            task=task_data['task'],
-            context=context,
-            max_tokens=self.config.get('max_tokens', 8000)
-        )
-
-    def _process_file_operations(self, response: str, project_name: str) -> List[Dict]:
-        """Process file operations from Claude's response."""
-        project_path = self._resolve_project_path(project_name)
-
-        # Extract file operations from response
-        operations = self.file_ops.extract_operations(response)
-
-        if not operations:
-            return []
-
-        # Execute operations
-        results = []
-        for op in operations:
-            result = self.file_ops.execute_operation(
-                op,
-                base_path=project_path
-            )
-            if result:
-                results.append(result)
-
-        return results
-
-    def _handle_git_operations(self, task_data: Dict[str, Any], file_results: List[Dict]) -> Optional[str]:
-        """Handle Git commit and push operations."""
-        project_path = self._resolve_project_path(task_data['project'])
-
-        # Commit changes
-        commit_msg = f"[Claude] {task_data['task'][:50]}"
-        commit_result = self.git_handler.commit_changes(
-            project_path,
-            commit_msg
-        )
-
-        # Push if requested
-        if task_data.get('auto_push', False):
-            self.git_handler.push_changes(project_path)
-
-        return self.git_handler.get_status(project_path)
-
-    def _save_response(self, content: str):
-        """Save response to response.md."""
-        self.response_file.write_text(content, encoding='utf-8')
-
-    def _error_response(self, message: str) -> Dict[str, Any]:
-        """Create error response."""
-        return {
-            'success': False,
-            'error': message,
-            'file_count': 0,
-            'tokens_used': 0
-        }
+            return {
+                'success': False,
+                'error': str(e)
+            }
 
 
 def main():
     """Main entry point."""
-    print("[START] Claude Dev Automation - Orchestrator\n")
-
-    orchestrator = Orchestrator()
-    result = orchestrator.execute_task()
-
-    print("\n" + "="*60)
-    if result['success']:
-        print("[SUCCESS] Task completed successfully!")
-        print(f"          Files modified: {result['file_count']}")
-        print(f"          Tokens used: {result['tokens_used']}")
-        if result.get('has_analysis'):
-            print(f"          Analysis provided: Yes")
+    # Determine workspace path
+    workspace_path = None
+    if len(sys.argv) > 1:
+        workspace_path = sys.argv[1]
     else:
-        print(f"[ERROR] Task failed: {result.get('error')}")
-    print("="*60)
+        # Try to find workspace relative to script
+        script_dir = Path(__file__).parent
+        default_workspace = script_dir.parent / 'workspace'
+        if default_workspace.exists():
+            workspace_path = str(default_workspace)
+
+    # Create and run orchestrator
+    orchestrator = Orchestrator(workspace_path)
+    result = orchestrator.run_task()
+
+    # Exit with appropriate code
+    sys.exit(0 if result['success'] else 1)
 
 
 if __name__ == "__main__":

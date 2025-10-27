@@ -1,10 +1,6 @@
 {
   "workspace_path": "C:/Development/claude-dev-automation/workspace",
   "projects_path": "C:/Development",
-  "api_key": "",
   "model": "claude-sonnet-4-5-20250929",
-  "max_tokens": 8000,
-  "temperature": 1.0,
-  "auto_commit": false,
-  "auto_push": false
+  "max_tokens": 8000
 }
