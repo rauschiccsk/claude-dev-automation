@@ -12,7 +12,6 @@ workspace/.env
 # API usage logs (contain potentially sensitive data)
 workspace/logs/
 tools/logs/
-*.jsonl
 *.log
 
 # Session data (optional - contains conversation history)
@@ -86,15 +85,6 @@ env/
 Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Linux
-*~
-.directory
 
 # ============================================
 # Testing & Temporary
