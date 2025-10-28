@@ -1,38 +1,34 @@
 # Task Response
 
-**Generated:** 2025-10-28 13:03:05
+**Generated:** 2025-10-28 18:13:56
 
 ## 📋 Task Summary
 
-**Project:** structure: uae-legal-agent
+**Project:** feature: uae-legal-agent
 
-**Task:** Vytvor základnú directory structure pre UAE Legal Agent projekt. Potrebné adresáre: - data/raw_documents/ (surové PDF dokumenty zo UAE zákonov) - data/processed/ (spracované a očistené texty) - data/embeddings/ (ChromaDB vektory) - logs/ (aplikačné logy) Do každého adresára pridaj .gitkeep súbor aby sa commitli prázdne adresáre. Vytvor aj data/README.md s popisom účelu jednotlivých adresárov v slovenčine.
+**Task:** Vytvor utils/text_processing.py s funkciami pre spracovanie právnych textov. Funkcie: - clean_arabic_text(text: str) -> str: Normalizácia arabského textu - extract_legal_references(text: str) -> List[str]: Detekcia odkazov na zákony (napr. "Federal Law No. 5/2012") - split_into_chunks(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]: Split pre RAG embeddings - remove_special_chars(text: str, keep_arabic: bool = True) -> str: Čistenie špeciálnych znakov Všetky funkcie s type hints, docstrings v slovenčine, error handling.
 
 **Priority:** P2
 
 ## 📝 File Operations
 
-**Total operations:** 5
-**Success:** 5
+**Total operations:** 1
+**Success:** 1
 **Failed:** 0
 
 **Created/Modified files:**
-- ✅ **CREATE**: `data/raw_documents/.gitkeep`
-- ✅ **CREATE**: `data/processed/.gitkeep`
-- ✅ **CREATE**: `data/embeddings/.gitkeep`
-- ✅ **CREATE**: `logs/.gitkeep`
-- ✅ **CREATE**: `data/README.md`
+- ✅ **CREATE**: `utils/text_processing.py`
 
 ## 📊 Token Usage
 
-- **Input tokens:** 271
-- **Output tokens:** 309
-- **Total tokens:** 580
+- **Input tokens:** 322
+- **Output tokens:** 1 480
+- **Total tokens:** 1 802
 
-**Cost:** $0.0054 USD (€0.0060 EUR)
+**Cost:** $0.0232 USD (€0.0255 EUR)
 
 💰 **Financial Balance:** 
-   - This task cost: $0.0054
+   - This task cost: $0.0232
    - Zostatok: ~$2.50 USD (check at https://console.anthropic.com/settings/billing)
 
 ---

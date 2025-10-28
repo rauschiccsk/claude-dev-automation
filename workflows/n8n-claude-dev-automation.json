@@ -12,8 +12,8 @@
       "type": "n8n-nodes-base.localFileTrigger",
       "typeVersion": 1,
       "position": [
-        -128,
-        0
+        -592,
+        -464
       ]
     },
     {
@@ -34,8 +34,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        448,
-        0
+        -16,
+        -464
       ],
       "id": "c671c691-2207-4bfe-b9b9-3d5f6dfd8589",
       "name": "Parse Task Input"
@@ -64,8 +64,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        672,
-        0
+        208,
+        -464
       ]
     },
     {
@@ -97,8 +97,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        896,
-        0
+        432,
+        -464
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -116,8 +116,8 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        1104,
-        0
+        640,
+        -464
       ]
     },
     {
@@ -132,23 +132,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1296,
-        0
+        832,
+        -464
       ],
       "id": "d911d92c-2162-446c-93bc-6dcfb636616f",
       "name": "Execute Operations"
     },
     {
       "parameters": {
-        "command": "=cd C:/Development/{{$node['Parse YAML Task'].json.project}} && git add . && git commit -m \"Auto-commit: {{$node['Parse Task Input'].json.task}}\" && git status"
+        "command": "=cd C:/Development/{{$node['Parse YAML Task'].json.project}} && git add . && git commit -m \"feat: automated task for {{$node['Parse YAML Task'].json.project}}\" && git status"
       },
       "id": "587bd5f0-85f4-46c2-a1a7-4a280b6e99a8",
       "name": "Git Commit",
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        1472,
-        0
+        1200,
+        -464
       ]
     },
     {
@@ -160,8 +160,8 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        1632,
-        0
+        1360,
+        -464
       ]
     },
     {
@@ -182,23 +182,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1808,
-        0
+        1536,
+        -464
       ],
       "id": "bc8b0964-0c2f-44c1-8ec2-9cd0fa7c030c",
       "name": "Save Response"
     },
     {
       "parameters": {
-        "functionCode": "// Read file content from BINARY data (Read/Write Files returns binary)\nlet fileContent = '';\n\nconsole.log('=== Parse YAML Task Debug ===');\nconsole.log('Has binary:', !!$input.item.binary);\nconsole.log('Binary keys:', $input.item.binary ? Object.keys($input.item.binary) : 'none');\n\n// Read from binary.data (Read/Write Files stores file content here)\nif ($input.item.binary && $input.item.binary.data) {\n  const buffer = Buffer.from($input.item.binary.data.data, 'base64');\n  fileContent = buffer.toString('utf8');\n  console.log('File read from binary.data, length:', fileContent.length);\n} else {\n  throw new Error('No binary data found. Check if Read/Write Files node executed correctly.');\n}\n\nconsole.log('First 200 chars:', fileContent.substring(0, 200));\n\n// Parse YAML\nconst lines = fileContent.split('\\n');\nconst task = {\n  type: '',\n  project: '',\n  description: '',\n  priority: 'P2'\n};\n\nlet currentSection = '';\nlet descriptionLines = [];\n\nfor (const line of lines) {\n  const trimmed = line.trim();\n  \n  if (trimmed.startsWith('type:')) {\n    task.type = trimmed.replace('type:', '').trim();\n  } else if (trimmed.startsWith('project:')) {\n    task.project = trimmed.replace('project:', '').trim();\n  } else if (trimmed.startsWith('description:')) {\n    currentSection = 'description';\n    const desc = trimmed.replace('description:', '').trim();\n    if (desc && desc !== '|') {\n      descriptionLines.push(desc);\n    }\n  } else if (currentSection === 'description' && trimmed && !trimmed.startsWith('context:') && !trimmed.startsWith('requirements:')) {\n    descriptionLines.push(trimmed);\n  } else if (trimmed.startsWith('context:') || trimmed.startsWith('requirements:')) {\n    currentSection = '';\n  }\n}\n\ntask.description = descriptionLines.join(' ').trim();\n\n// Build task string for Flask API\nconst taskString = `${task.type}: ${task.project} - ${task.description}`;\n\nconsole.log('Parsed successfully:');\nconsole.log('  Type:', task.type);\nconsole.log('  Project:', task.project);\nconsole.log('  Description length:', task.description.length);\nconsole.log('  Task string:', taskString);\n\nreturn {\n  json: {\n    task: taskString,\n    project: task.project,\n    priority: task.priority,\n    type: task.type\n  }\n};"
+        "functionCode": "// Read file content from BINARY data (Read/Write Files returns binary)\nlet fileContent = '';\n\nconsole.log('=== Parse YAML Task Debug ===');\nconsole.log('Has binary:', !!$input.item.binary);\nconsole.log('Binary keys:', $input.item.binary ? Object.keys($input.item.binary) : 'none');\n\n// Read from binary.data (Read/Write Files stores file content here)\nif ($input.item.binary && $input.item.binary.data) {\n  const buffer = Buffer.from($input.item.binary.data.data, 'base64');\n  fileContent = buffer.toString('utf8');\n  console.log('File read from binary.data, length:', fileContent.length);\n} else {\n  throw new Error('No binary data found. Check if Read/Write Files node executed correctly.');\n}\n\nconsole.log('First 200 chars:', fileContent.substring(0, 200));\n\n// Parse YAML\nconst lines = fileContent.split('\\n');\nconst task = {\n  type: '',\n  project: '',\n  description: '',\n  priority: 'P2'\n};\n\nlet currentSection = '';\nlet descriptionLines = [];\n\nfor (const line of lines) {\n  const trimmed = line.trim();\n  \n  if (trimmed.startsWith('type:')) {\n    task.type = trimmed.replace('type:', '').trim();\n  } else if (trimmed.startsWith('project:')) {\n    task.project = trimmed.replace('project:', '').trim();\n  } else if (trimmed.startsWith('description:')) {\n    currentSection = 'description';\n    const desc = trimmed.replace('description:', '').trim();\n    if (desc && desc !== '|') {\n      descriptionLines.push(desc);\n    }\n  } else if (currentSection === 'description' && trimmed && !trimmed.startsWith('context:') && !trimmed.startsWith('requirements:')) {\n    descriptionLines.push(trimmed);\n  } else if (trimmed.startsWith('context:') || trimmed.startsWith('requirements:')) {\n    currentSection = '';\n  }\n}\n\n// Join description and ESCAPE quotes for JSON\ntask.description = descriptionLines.join(' ').trim();\n\n// Build task string for Flask API - ESCAPE QUOTES!\nconst taskString = `${task.type}: ${task.project} - ${task.description}`;\n\n// CRITICAL: Escape quotes in task string for JSON compatibility\nconst escapedTaskString = taskString.replace(/\"/g, '\\\\\"');\n\nconsole.log('Parsed successfully:');\nconsole.log('  Type:', task.type);\nconsole.log('  Project:', task.project);\nconsole.log('  Description length:', task.description.length);\nconsole.log('  Task string (escaped):', escapedTaskString);\n\nreturn {\n  json: {\n    task: escapedTaskString,\n    project: task.project,\n    priority: task.priority,\n    type: task.type\n  }\n};"
       },
       "id": "90f0c0d8-8577-4e91-8054-58ef0f27c373",
       "name": "Parse YAML Task",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        256,
-        0
+        -208,
+        -464
       ]
     },
     {
@@ -209,12 +209,30 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
-        64,
-        0
+        -400,
+        -464
       ],
       "id": "cf9be354-5ab9-42ce-8204-5318daac833a",
       "name": "Read/Write Files from Disk",
       "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5000/verify-files",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"project_name\": $('Parse YAML Task').item.json.project,\n  \"file_results\": $json.file_results\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        -464
+      ],
+      "id": "021e68a7-2040-4092-ad6d-76ecca2cb1f1",
+      "name": "Verify Files"
     }
   ],
   "pinData": {},
@@ -278,7 +296,7 @@
       "main": [
         [
           {
-            "node": "Git Commit",
+            "node": "Verify Files",
             "type": "main",
             "index": 0
           }
@@ -328,6 +346,17 @@
           }
         ]
       ]
+    },
+    "Verify Files": {
+      "main": [
+        [
+          {
+            "node": "Git Commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -336,7 +365,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "executionTimeout": -1
   },
-  "versionId": "eb66fa24-50c8-4f15-94cc-4602dc49050a",
+  "versionId": "c28fabc5-2cbd-4abd-9d33-8add6a890433",
   "meta": {
     "instanceId": "c9efa060a1effb29a1cf6ca0778efa875664a185f8bfcd0e3a29c472e1befe8e"
   },

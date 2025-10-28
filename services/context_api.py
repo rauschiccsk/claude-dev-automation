@@ -304,6 +304,73 @@ def execute_operations():
         }), 500
 
 
+@app.route('/verify-files', methods=['POST'])
+def verify_files():
+    """Verify that created files exist on disk before Git commit"""
+    try:
+        data = request.get_json()
+        project_name = data.get('project_name')
+        file_results = data.get('file_results', [])
+
+        if not project_name:
+            return jsonify({
+                'status': 'error',
+                'message': 'project_name is required'
+            }), 400
+
+        project_path = PROJECTS_PATH / project_name
+
+        if not project_path.exists():
+            return jsonify({
+                'status': 'error',
+                'message': f'Project not found: {project_name}'
+            }), 404
+
+        verification_results = []
+        all_verified = True
+        missing_files = []
+
+        for file_info in file_results:
+            file_path = file_info.get('path')
+            full_path = project_path / file_path
+
+            exists = full_path.exists()
+            file_size = full_path.stat().st_size if exists else 0
+
+            verification_results.append({
+                'path': file_path,
+                'exists': exists,
+                'size': file_size,
+                'full_path': str(full_path)
+            })
+
+            if not exists:
+                all_verified = False
+                missing_files.append(file_path)
+
+        if all_verified:
+            return jsonify({
+                'status': 'success',
+                'message': f'All {len(file_results)} files verified successfully',
+                'files': verification_results,
+                'verified_count': len(file_results)
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing {len(missing_files)} file(s): {", ".join(missing_files)}',
+                'files': verification_results,
+                'verified_count': len(file_results) - len(missing_files),
+                'missing_count': len(missing_files)
+            }), 400
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
 @app.route('/save-response', methods=['POST'])
 def save_response():
     """Save response.md to workspace"""
