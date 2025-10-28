@@ -93,6 +93,32 @@ def parse_task():
         }), 500
 
 
+@app.route('/simple-task', methods=['POST'])
+def simple_task():
+    """Execute simple task WITHOUT project context - just the task description"""
+    try:
+        data = request.get_json()
+        task_description = data.get('task_description')
+
+        if not task_description:
+            return jsonify({
+                'status': 'error',
+                'message': 'task_description is required'
+            }), 400
+
+        # Return ONLY the task, no project context
+        return jsonify({
+            'status': 'success',
+            'context': task_description
+        })
+
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
 @app.route('/build-context', methods=['POST'])
 def build_context():
     """Build smart context for a project and task"""
