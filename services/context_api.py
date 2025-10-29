@@ -145,6 +145,7 @@ def build_context():
 **CRITICAL: File Operations Format**
 When you need to create, modify, or delete files, you MUST use this exact XML format:
 
+CREATE new file:
 <file_operations>
   <operation type="create" path="filename.ext">
     <content>
@@ -153,8 +154,31 @@ File content here
   </operation>
 </file_operations>
 
-Operation types: create, modify, delete
-Always wrap file content in <content> tags.
+UPDATE existing file (find/replace):
+<file_operations>
+  <operation type="update" path="filename.ext">
+    <find>exact text to find</find>
+    <replace>replacement text</replace>
+  </operation>
+</file_operations>
+
+MODIFY entire file (overwrite):
+<file_operations>
+  <operation type="modify" path="filename.ext">
+    <content>
+New complete file content
+    </content>
+  </operation>
+</file_operations>
+
+DELETE file:
+<file_operations>
+  <operation type="delete" path="filename.ext" />
+</file_operations>
+
+Operation types: create, update, modify, delete
+For UPDATE: find text must exist exactly in file (case-sensitive)
+Always wrap file content in <content> tags for create/modify operations.
 """
 
         full_context = context + xml_instructions
@@ -218,7 +242,7 @@ def project_info(n):
 
 @app.route('/execute-operations', methods=['POST'])
 def execute_operations():
-    """Execute file operations (create, modify, delete files)"""
+    """Execute file operations (create, update, modify, delete files)"""
     try:
         data = request.get_json()
         project_name = data.get('project_name')
@@ -263,6 +287,57 @@ def execute_operations():
                         'operation': op_type,
                         'path': file_path,
                         'status': status
+                    })
+
+                elif op_type == 'update':
+                    # UPDATE: Find/replace in existing file
+                    find_text = op.get('find', '')
+                    replace_text = op.get('replace', '')
+
+                    if not find_text:
+                        results.append({
+                            'success': False,
+                            'operation': 'update',
+                            'path': file_path,
+                            'error': 'Missing "find" parameter'
+                        })
+                        continue
+
+                    if not full_path.exists():
+                        results.append({
+                            'success': False,
+                            'operation': 'update',
+                            'path': file_path,
+                            'error': 'File not found - cannot update non-existent file'
+                        })
+                        continue
+
+                    # Read existing content
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        original_content = f.read()
+
+                    # Check if find_text exists
+                    if find_text not in original_content:
+                        results.append({
+                            'success': False,
+                            'operation': 'update',
+                            'path': file_path,
+                            'error': f'Find text not found in file'
+                        })
+                        continue
+
+                    # Replace (first occurrence only for safety)
+                    new_content = original_content.replace(find_text, replace_text, 1)
+
+                    # Write back
+                    with open(full_path, 'w', encoding='utf-8') as f:
+                        f.write(new_content)
+
+                    results.append({
+                        'success': True,
+                        'operation': 'update',
+                        'path': file_path,
+                        'status': 'updated'
                     })
 
                 elif op_type == 'delete':
