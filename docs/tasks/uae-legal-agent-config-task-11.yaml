@@ -1,0 +1,33 @@
+task:
+  type: bugfix
+  project: uae-legal-agent
+  description: |
+    Oprav utils/text_processing.py aby prešli všetky unit testy.
+    
+    Potrebné zmeny:
+    
+    1. split_into_chunks() - pri prázdnom stringu vráť [""] namiesto []
+    
+    2. remove_special_chars() - pridaj regex odstránenie interpunkcie:
+       - Ak keep_arabic=True: pattern = r'[^\w\s\u0600-\u06FF]'
+       - Ak keep_arabic=False: pattern = r'[^\w\s]'
+       - Použiť re.sub(pattern, '', text)
+    
+    Zachovaj všetky existujúce funkcie a ich signatúry.
+    Pridaj import re ak chýba.
+  
+  context:
+    - "Súbor existuje: utils/text_processing.py"
+    - "Testy zlyhávajú: test_handles_empty_string, test_removes_punctuation"
+    - "12/14 testov prechádza, potrebujeme 14/14"
+    - "Tests path: tests/test_text_processing.py"
+  
+  requirements:
+    - Fix split_into_chunks() empty string handling
+    - Fix remove_special_chars() regex pattern
+    - Zachovať type hints a docstrings
+    - Všetky ostatné funkcie nemenené
+    - Import re modul ak chýba
+
+  expected_files:
+    - utils/text_processing.py (modified)

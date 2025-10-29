@@ -1,0 +1,289 @@
+type: documentation
+project: uae-legal-agent
+priority: P1
+
+description: |
+  Add session notes for config module implementation.
+  Create docs/sessions/2025-10-29_config_module.md with complete documentation of config module task.
+
+context:
+  - This is session notes documentation for config module implementation
+  - Config module was created via n8n workflow (utils/config.py, tests/test_config.py, .env.example)
+  - n8n workflow git push fix was completed
+  - New workflow rules established (1 task = 1 chat)
+
+requirements:
+  file: docs/sessions/2025-10-29_config_module.md
+  content: |
+    # Session Notes: Config Module Implementation
+    **Date:** 2025-10-29  
+    **Project:** uae-legal-agent  
+    **Focus:** Config Management Module via n8n workflow  
+    **Status:** ✅ Completed
+    
+    ---
+    
+    ## 🎯 Session Ciele
+    
+    **Hlavná úloha:**
+    - Implementovať config management module pomocou claude-dev-automation n8n workflow
+    - Vytvoriť utils/config.py, tests/test_config.py, .env.example
+    - Použiť Pydantic BaseSettings pre validáciu a .env loading
+    
+    **Dokončené:**
+    - ✅ Pripravený task.yaml pre n8n workflow
+    - ✅ Workflow úspešne vykonaný (files created)
+    - ✅ Git commit a push vykonaný
+    - ✅ n8n workflow opravený (git push pridaný do Git Commit node)
+    - ✅ Definované nové workflow pravidlá
+    
+    ---
+    
+    ## 📊 Stav Pred Session
+    
+    **Completed Modules:**
+    ```
+    ✅ utils/logger.py            8/8  tests passing
+    ✅ utils/text_processing.py  14/14 tests passing
+    ────────────────────────────────────
+       TOTAL:                    22/22 ✅
+    ```
+    
+    ---
+    
+    ## 🔧 Implementované v Session
+    
+    ### 1. Config Module Cez n8n Workflow
+    
+    **Created Files:**
+    - `utils/config.py` - Pydantic BaseSettings implementation (~150 lines)
+    - `tests/test_config.py` - Comprehensive tests (~250 lines, 12+ tests)
+    - `.env.example` - Configuration template
+    
+    **Features:**
+    - Settings class s required fields (CLAUDE_API_KEY, OPENAI_API_KEY)
+    - Optional fields s defaults (APP_NAME, VERSION, HOST, PORT, etc.)
+    - Path management (DATA_DIR, UPLOAD_DIR, VECTOR_DB_DIR, LOG_DIR)
+    - Singleton pattern: get_settings()
+    - Auto-create directories: _ensure_directories()
+    - Reload function: reload_settings() (for testing)
+    - ValidationError for missing required keys
+    
+    ### 2. n8n Workflow Fix
+    
+    **Problem:** Git Commit node nerobil `git push`
+    
+    **Fix Applied:**
+    ```bash
+    # Before:
+    ... && git commit -m "..." && git status
+    
+    # After:
+    ... && git commit -m "..." && git push origin main && git status
+    ```
+    
+    **Status:** ✅ Fixed and tested
+    
+    ---
+    
+    ## 📚 Nové Workflow Pravidlá (CRITICAL!)
+    
+    ### Pravidlo #1: Jeden Task = Jeden Chat
+    **Dôvod:** Claude chat sa môže zablokovať aj pri 67% voľných tokenov (rate limits, complexity)
+    
+    **Workflow:**
+    1. Otvor nový chat
+    2. Fetch session notes z GitHub
+    3. Vykonaj JEDEN task.yaml
+    4. Otestuj výsledky (ak potrebné)
+    5. Zdokumentuj v session notes (cez task.yaml!)
+    6. Ukončiť chat, začať nový pre ďalší task
+    
+    ### Pravidlo #2: Session Notes Cez Automation
+    **Dôležité:** Session notes pridávať cez task.yaml, nie manuálne!
+    
+    **Dôvod:** 
+    - Konzistentný workflow
+    - Automatický git commit & push
+    - Používame vlastnú automatizáciu
+    
+    ### Pravidlo #3: Session Notes Musia Byť Kompletné
+    **Musí obsahovať:**
+    - ✅ Čo bolo dokončené v session
+    - ✅ Nové pravidlá/poznatky
+    - ✅ Stopercentné informácie z projektu (NO assumptions!)
+    - ✅ Aktuálny stav projektu
+    - ✅ Jasné next steps
+    
+    ### Pravidlo #4: Žiadne Assumptions
+    **Ak informácia nie je v projekte:**
+    - ❌ Nevymýšľať ako by to mohlo byť
+    - ✅ Spýtať sa používateľa
+    - ✅ Alebo fetch z GitHub
+    - ✅ Alebo skip a dokumentovať ako "needs clarification"
+    
+    ---
+    
+    ## ✅ Výsledky Session
+    
+    **Created Files:**
+    ```
+    utils/config.py              ✨ New (via n8n workflow)
+    tests/test_config.py         ✨ New (via n8n workflow)
+    .env.example                 ✨ New (via n8n workflow)
+    ```
+    
+    **Git Status:**
+    ```
+    Commit: "feat: automated task for uae-legal-agent"
+    Push: ✅ Done (automatic via fixed workflow)
+    Branch: main
+    Files: 3 new files
+    ```
+    
+    **Test Status:**
+    ```
+    ✅ test_logger.py            8/8  PASSED
+    ✅ test_text_processing.py  14/14 PASSED
+    🔄 test_config.py           12+   PENDING (needs pytest run in next chat)
+    ```
+    
+    ---
+    
+    ## 🚀 Next Chat Priorities
+    
+    ### Priority 1: Test Config Module
+    ```bash
+    cd C:\Development\uae-legal-agent
+    pip install pydantic pydantic-settings python-dotenv
+    pytest tests/test_config.py -v
+    ```
+    
+    **Expected:** 12+ tests PASSED, 100% coverage
+    
+    ### Priority 2: Choose Next Module
+    **Options:**
+    - PDF Processor (recommended - simple, standalone)
+    - Vector DB (ChromaDB integration)
+    - Claude API Wrapper (API calls with RAG)
+    
+    ---
+    
+    ## 📝 Files Modified This Session
+    
+    ```
+    utils/config.py                 ✨ Created (via workflow)
+    tests/test_config.py            ✨ Created (via workflow)
+    .env.example                    ✨ Created (via workflow)
+    n8n workflow Git Commit node    ✏️ Modified (added git push)
+    ```
+    
+    ---
+    
+    ## 💡 Lessons Learned
+    
+    ### 1. n8n Workflow Git Push
+    **Finding:** Workflow nerobil automatický push
+    **Fix:** Pridaný `git push origin main` do Git Commit node
+    **Result:** Teraz celá git operácia automatická (add + commit + push)
+    
+    ### 2. Session Notes Automation
+    **Finding:** Session notes by mali byť pridávané cez task.yaml
+    **Reason:** Používame vlastnú automatizáciu, nie manuálne operácie
+    **Implementation:** Vytvoriť task.yaml pre docs/sessions/*.md
+    
+    ### 3. Chat Token Limit
+    **Finding:** Chat sa môže zablokovať aj pri 67% voľných tokenov
+    **Root Cause:** Token meter nezobrazuje rate limits, complexity
+    **Solution:** 1 task = 1 chat preventive approach
+    
+    ### 4. Config Module Pattern
+    **Pattern:**
+    - Pydantic BaseSettings pre validation
+    - Singleton pattern (get_settings())
+    - Auto-create directories
+    - .env loading s case_sensitive=True
+    - Clear ValidationError messages
+    
+    ---
+    
+    ## 🎯 Aktuálny Stav Projektu
+    
+    ### Completed:
+    ```
+    Phase 1 - Utils:
+      ✅ utils/logger.py           (8/8 tests passing)
+      ✅ utils/text_processing.py  (14/14 tests passing)
+      🔄 utils/config.py           (created, needs testing)
+    ```
+    
+    ### Pending:
+    ```
+    Phase 1 - Utils:
+      ⏹️ utils/pdf_processor.py
+      
+    Phase 2 - Services:
+      ⏹️ services/claude_api.py
+      ⏹️ services/vector_db.py
+      
+    Phase 3 - API:
+      ⏹️ api/main.py
+      ⏹️ api/endpoints/
+    ```
+    
+    ### Dependencies:
+    ```
+    Installed:
+      ✅ pytest, pathlib
+    
+    Pending Install (for config):
+      🔄 pydantic, pydantic-settings, python-dotenv
+      
+    Future:
+      ⏹️ fastapi, uvicorn, anthropic, PyPDF2, chromadb
+    ```
+    
+    ---
+    
+    ## 📋 Next Chat Startup Template
+    
+    ```
+    Pokračujeme v projekte uae-legal-agent pomocou claude-dev-automation n8n workflow.
+    
+    Session notes: https://raw.githubusercontent.com/rauschiccsk/uae-legal-agent/main/docs/sessions/2025-10-29_config_module.md
+    
+    Aktuálny stav:
+    ✅ utils/logger.py - Implemented + Tested (8/8)
+    ✅ utils/text_processing.py - Implemented + Tested (14/14)
+    🔄 utils/config.py - Implemented via workflow, needs testing
+    
+    Ďalší krok: Test config module a vybrať ďalší modul na implementáciu.
+    ```
+    
+    ---
+    
+    ## ✅ Session Completion Checklist
+    
+    - [x] Config module task.yaml vytvorený
+    - [x] n8n workflow úspešne vykonaný
+    - [x] Files created (config.py, test_config.py, .env.example)
+    - [x] Git commit & push vykonaný (automatic)
+    - [x] n8n workflow opravený (git push added)
+    - [x] Nové workflow pravidlá definované
+    - [x] Session notes pripravené
+    - [x] Session notes pridané cez task.yaml (automation!)
+    
+    ---
+    
+    **Session Status:** ✅ COMPLETED  
+    **Next Session:** Test config module + Choose next module  
+    **Critical Rules:** 1 task = 1 chat, Session notes via automation  
+    **Date:** 2025-10-29
+
+git_commit: "docs: Session notes for config module implementation"
+
+notes:
+  - This session notes file should be added via automation (task.yaml)
+  - n8n workflow git push is now fixed and working
+  - Config module created successfully, testing pending for next chat
+  - New workflow rules established and documented

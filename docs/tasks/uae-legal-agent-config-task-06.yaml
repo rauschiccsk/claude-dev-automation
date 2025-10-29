@@ -1,0 +1,36 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor utils/vector_db.py pre ChromaDB vector database management.
+    
+    Funkcionality:
+    - VectorDB class pre prácu s ChromaDB
+    - initialize_db() - vytvorenie/pripojenie k databáze
+    - add_document(text: str, metadata: Dict) - pridanie dokumentu s embeddings
+    - search(query: str, n_results: int = 5) - semantické vyhľadávanie
+    - delete_document(doc_id: str) - vymazanie dokumentu
+    - get_collection_stats() - štatistiky (počet dokumentov, atď.)
+    
+    Použiť ChromaDB s persistence v data/embeddings/.
+    Integrácia s config.py a logger.
+  
+  context:
+    - "Config existuje: config.py s CHROMA_PERSIST_DIR, CHROMA_COLLECTION_NAME"
+    - "Logger existuje: utils/logger.py"
+    - "Text processing existuje: utils/text_processing.py (split_into_chunks)"
+    - "Embeddings path: data/embeddings/"
+    - "ChromaDB používa OpenAI embeddings alebo default"
+  
+  requirements:
+    - Použiť chromadb package
+    - Class-based design (VectorDB class)
+    - Type hints pre všetky metódy
+    - Docstrings v slovenčine
+    - Error handling (connection errors, invalid queries)
+    - Logging všetkých operácií
+    - Context manager support (with statement)
+    - Persistence v data/embeddings/
+
+  expected_files:
+    - utils/vector_db.py

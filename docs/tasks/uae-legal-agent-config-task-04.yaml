@@ -1,0 +1,30 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor utils/text_processing.py s funkciami pre spracovanie právnych textov.
+    
+    Funkcie:
+    - clean_arabic_text(text: str) -> str: Normalizácia arabského textu
+    - extract_legal_references(text: str) -> List[str]: Detekcia odkazov na zákony (napr. "Federal Law No. 5/2012")
+    - split_into_chunks(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]: Split pre RAG embeddings
+    - remove_special_chars(text: str, keep_arabic: bool = True) -> str: Čistenie špeciálnych znakov
+    
+    Všetky funkcie s type hints, docstrings v slovenčine, error handling.
+  
+  context:
+    - "Projekt spracováva arabské právne dokumenty"
+    - "RAG vyžaduje chunking textu pre embeddings"
+    - "Potrebujeme detekovať odkazy na zákony"
+    - "Logger už existuje v utils/logger.py"
+  
+  requirements:
+    - Type hints pre všetky funkcie
+    - Docstrings v slovenčine s príkladmi
+    - Error handling a logging
+    - Unit test friendly (pure functions)
+    - Support pre UTF-8 arabský text
+    - Configurable chunk_size a overlap
+
+  expected_files:
+    - utils/text_processing.py

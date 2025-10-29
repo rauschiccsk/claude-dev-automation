@@ -1,0 +1,35 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor requirements.txt so všetkými Python dependencies pre UAE Legal Agent.
+    
+    Potrebné packages:
+    - anthropic - Claude API client
+    - chromadb - vector database
+    - pymupdf (fitz) - PDF processing
+    - pydantic - config management
+    - pydantic-settings - environment variables
+    - flask - ak bude API (optional)
+    - flask-cors - ak bude API (optional)
+    
+    Vytvor aj .env.example s template pre environment variables.
+    Pridaj README.md sekciu Installation.
+  
+  context:
+    - "Projekt používa: Claude API, ChromaDB, PyMuPDF, Pydantic"
+    - "Python 3.11+"
+    - "Config s environment variables support"
+    - "Development environment: Windows"
+  
+  requirements:
+    - Locked versions pre reprodukovateľnosť
+    - Komentáre vysvetľujúce účel každého package
+    - .env.example s všetkými potrebnými ENV vars
+    - README.md update s Installation sekciou
+    - Pip-compatible format
+
+  expected_files:
+    - requirements.txt
+    - .env.example
+    - README.md (update existujúceho alebo create new)

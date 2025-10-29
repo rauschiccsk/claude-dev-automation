@@ -1,0 +1,34 @@
+task:
+  type: bugfix
+  project: uae-legal-agent
+  description: |
+    Oprav function signatures v utils/text_processing.py aby zodpovedali testom.
+    
+    Potrebné zmeny v signaturách:
+    
+    1. split_into_chunks funkcia musí mať tretí parameter overlap:
+       def split_into_chunks(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]
+       Funkcia musí podporovať prekrývanie chunks pre RAG embeddings.
+    
+    2. remove_special_chars funkcia musí mať druhý parameter keep_arabic:
+       def remove_special_chars(text: str, keep_arabic: bool = True) -> str
+       Parameter určuje či zachovať arabské znaky alebo nie.
+    
+    Zachovaj všetky 4 funkcie, len oprav tieto 2 signatúry a ich implementácie aby používali nové parametre správne.
+  
+  context:
+    - "Súbor obsahuje 4 funkcie"
+    - "8 testov zlyháva kvôli chýbajúcim parametrom"
+    - "6 testov prechádza (clean_arabic_text, extract_legal_references)"
+    - "Potrebujeme opraviť len 2 signatúry"
+  
+  requirements:
+    - Pridať overlap parameter do split_into_chunks
+    - Pridať keep_arabic parameter do remove_special_chars
+    - Implementácie musia používať nové parametre
+    - Zachovať type hints
+    - Zachovať docstrings
+    - Všetky 4 funkcie zostávajú
+
+  expected_files:
+    - utils/text_processing.py (modified)

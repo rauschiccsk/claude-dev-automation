@@ -1,0 +1,34 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor main.py - hlavný entry point pre UAE Legal Agent CLI aplikáciu.
+    
+    Funkcionality:
+    - CLI interface s argparse (príkazy: import, search, analyze)
+    - import command - importuje PDF dokument do systému
+    - search command - vyhľadáva v dokumentoch podľa query
+    - analyze command - analyzuje právny dokument s Claude
+    - LegalAgent class - orchestrácia všetkých komponentov
+    
+    Integruje všetky utils komponenty do jedného workflow.
+    User-friendly výstupy v slovenčine.
+  
+  context:
+    - "Všetky utils existujú: logger, pdf_processor, text_processing, vector_db, claude_client"
+    - "Config existuje: config.py"
+    - "Data paths: data/raw_documents, data/processed, data/embeddings"
+    - "CLI pre konzolovú interakciu"
+  
+  requirements:
+    - Použiť argparse pre CLI
+    - LegalAgent class koordinuje všetky komponenty
+    - Tri hlavné príkazy: import, search, analyze
+    - Type hints a docstrings v slovenčine
+    - Error handling a user-friendly chybové hlášky
+    - Progress indicators (processing PDF, calling API...)
+    - Logging všetkých operácií
+    - Príklady usage v --help
+
+  expected_files:
+    - main.py

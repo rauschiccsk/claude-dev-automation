@@ -1,0 +1,38 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor utils/claude_client.py pre Claude API integration.
+    
+    Funkcionality:
+    - ClaudeClient class pre prácu s Claude API
+    - analyze_legal_document(text: str, context: List[str]) - analýza právneho dokumentu s RAG context
+    - ask_question(question: str, context: List[str]) - otázka s RAG context
+    - summarize_document(text: str) - zhrnutie dokumentu
+    - translate_to_slovak(text: str) - preklad arabčiny do slovenčiny
+    - _build_prompt() - helper pre konštrukciu promptov
+    
+    API komunikácia cez anthropic package.
+    Slovak language responses.
+    RAG context integration.
+  
+  context:
+    - "Config existuje: config.py s CLAUDE_API_KEY, CLAUDE_MODEL, CLAUDE_MAX_TOKENS"
+    - "Logger existuje: utils/logger.py"
+    - "VectorDB existuje: utils/vector_db.py (search method)"
+    - "Projekt je legal analysis pre UAE zákony"
+    - "Output jazyk: slovenčina"
+  
+  requirements:
+    - Použiť anthropic package (Anthropic SDK)
+    - Class-based design (ClaudeClient class)
+    - Type hints pre všetky metódy
+    - Docstrings v slovenčine
+    - Error handling (API errors, rate limits, network)
+    - Retry logic pre transient errors
+    - Logging všetkých API calls (tokens, cost)
+    - Slovak system prompt pre legal analysis
+    - RAG context formatting (top N relevant chunks)
+
+  expected_files:
+    - utils/claude_client.py

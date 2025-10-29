@@ -1,0 +1,39 @@
+task:
+  type: bugfix
+  project: uae-legal-agent
+  description: |
+    Doplň chýbajúce funkcie do utils/text_processing.py.
+    
+    ZACHOVAJ existujúce funkcie:
+    - split_into_chunks() - už opravená, nechaj ako je
+    - remove_special_chars() - už opravená, nechaj ako je
+    
+    PRIDAJ tieto chýbajúce funkcie:
+    
+    1. clean_arabic_text(text: str) -> str
+       Normalizuje arabský text, odstráni prebytočné medzery.
+       Použiť regex na nahradenie viacnásobných medzier jednou.
+    
+    2. extract_legal_references(text: str) -> List[str]
+       Extrahuje odkazy na zákony z textu.
+       Detekuje formáty ako "Federal Law No. 5/2012", "Law No. 10/2020".
+       Použiť regex pattern pre detekciu.
+       Vrátiť list unikátnych nájdených odkazov.
+    
+    Import re už existuje. Pridaj import List z typing ak chýba.
+  
+  context:
+    - "Súbor existuje: utils/text_processing.py"
+    - "Obsahuje len 2 funkcie, potrebujeme 4"
+    - "Testy očakávajú všetky 4 funkcie"
+    - "Existujúce funkcie sú správne, nesmú sa zmeniť"
+  
+  requirements:
+    - Zachovať existujúce 2 funkcie presne ako sú
+    - Pridať 2 nové funkcie
+    - Type hints pre všetky funkcie
+    - Docstrings v slovenčine
+    - Import List from typing ak chýba
+
+  expected_files:
+    - utils/text_processing.py (modified)

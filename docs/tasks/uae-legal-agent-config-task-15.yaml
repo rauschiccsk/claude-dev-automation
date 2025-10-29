@@ -1,0 +1,93 @@
+type: feature
+project: uae-legal-agent
+priority: P1
+
+description: |
+  Implement config management module with Pydantic BaseSettings for centralized configuration.
+  Create utils/config.py with Settings class, tests/test_config.py with comprehensive tests, and .env.example template.
+
+context:
+  - Project uses Python with pytest for testing
+  - Follow patterns from utils/logger.py (singleton pattern) and utils/text_processing.py (type hints)
+  - Target 100% test coverage like existing modules (logger: 8/8, text_processing: 14/14)
+  - Use Pydantic BaseSettings for validation and .env file loading
+
+requirements:
+  implementation:
+    file: utils/config.py
+    features:
+      - Settings class using pydantic BaseSettings
+      - Load from .env file with case_sensitive=True
+      - Required fields: CLAUDE_API_KEY, OPENAI_API_KEY (raise ValidationError if missing)
+      - Optional with defaults: APP_NAME, APP_VERSION, ENVIRONMENT, DEBUG, HOST, PORT
+      - Path fields as Path objects: DATA_DIR, UPLOAD_DIR, VECTOR_DB_DIR, LOG_DIR
+      - Logging settings: LOG_LEVEL, LOG_FORMAT
+      - Claude API: CLAUDE_MODEL, CLAUDE_MAX_TOKENS, CLAUDE_TEMPERATURE
+      - Vector DB: VECTOR_DB_COLLECTION, EMBEDDING_MODEL, CHUNK_SIZE, CHUNK_OVERLAP
+      - PDF: MAX_UPLOAD_SIZE_MB, ALLOWED_EXTENSIONS
+      - Function get_settings() with singleton pattern (global _settings variable)
+      - Function _ensure_directories() to auto-create dirs on first access
+      - Function reload_settings() for testing (reset singleton)
+      - Full type hints on all functions
+      - Use Path from pathlib for directory paths
+      - Config class with env_file='.env', env_file_encoding='utf-8', case_sensitive=True
+    
+  tests:
+    file: tests/test_config.py
+    count: minimum 12 tests
+    fixtures:
+      - temp_env_file: Create .env in tmp_path for testing
+      - clean_settings: Reset global _settings between tests
+    test_cases:
+      - test_settings_creation_with_env_file: Load valid .env, verify values
+      - test_missing_required_api_keys: Missing CLAUDE_API_KEY should raise ValidationError
+      - test_missing_openai_key: Missing OPENAI_API_KEY should raise ValidationError
+      - test_default_values: Verify defaults applied (APP_NAME, PORT, etc)
+      - test_directory_creation: All directories exist after get_settings()
+      - test_singleton_pattern: Same instance returned on multiple calls
+      - test_reload_settings: reload_settings() loads new values from modified .env
+      - test_environment_variable_override: os.environ takes precedence
+      - test_path_types: DATA_DIR and others are Path instances
+      - test_case_sensitivity: Lowercase keys should not work
+      - test_valid_configuration: Full valid config loads successfully
+      - test_settings_attributes: Verify all expected attributes exist
+    coverage: 100%
+    
+  template:
+    file: .env.example
+    content: |
+      Template with all config variables and comments.
+      Required: CLAUDE_API_KEY, OPENAI_API_KEY with example format
+      Optional: All other settings with default values shown
+      Comments explaining each setting group
+
+dependencies:
+  - pydantic>=2.0
+  - pydantic-settings>=2.0  
+  - python-dotenv>=1.0
+
+validation:
+  - All tests passing (minimum 12)
+  - 100% code coverage
+  - Type hints on all functions
+  - No hardcoded secrets
+  - Clear ValidationError messages
+  - Directories auto-created
+  - Singleton working correctly
+  - Ready for use by PDF processor and Claude API modules
+
+reference_files:
+  - utils/logger.py: singleton pattern example
+  - utils/text_processing.py: type hints and validation patterns
+  - tests/test_logger.py: pytest fixtures and cleanup patterns
+
+git_commit: "feat: Add config management with pydantic settings and validation"
+
+notes:
+  - Use monkeypatch in tests to mock environment variables
+  - Reset _settings to None in clean_settings fixture
+  - Mock .env file in tmp_path to avoid affecting real config
+  - Test both ValidationError cases (missing keys) and success cases
+  - Ensure directories are created with parents=True, exist_ok=True
+  - Use pytest.raises for ValidationError tests
+  - Document Settings class fields with clear descriptions

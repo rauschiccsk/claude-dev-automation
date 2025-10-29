@@ -1,0 +1,34 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor utils/logger.py s logging systémom pre UAE Legal Agent.
+    
+    Funkcionality:
+    - Structured logging s JSON formátom
+    - File output (logs/) + console output
+    - Rotation policy (max 10MB per file, keep 5 files)
+    - Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+    - Slovenské log messages support (UTF-8)
+    - Integration s config.py pre nastavenia
+    
+    Vytvor aj utils/__init__.py pre package.
+  
+  context:
+    - "Config.py už existuje s LOG_LEVEL a LOG_FILE settings"
+    - "Logs adresár: logs/ (už existuje)"
+    - "Potrebujeme logovať v slovenčine"
+    - "UTF-8 encoding pre všetky logy"
+  
+  requirements:
+    - Použiť Python logging module
+    - RotatingFileHandler pre file rotation
+    - Formátovanie: timestamp, level, module, message
+    - Console aj file output súčasne
+    - UTF-8 encoding
+    - Jednoduchá inicializácia: get_logger(name)
+    - Docstrings v slovenčine
+
+  expected_files:
+    - utils/__init__.py
+    - utils/logger.py

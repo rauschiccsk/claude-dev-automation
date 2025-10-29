@@ -1,0 +1,39 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor testing infrastructure s pytest pre UAE Legal Agent.
+    
+    Súbory:
+    - tests/__init__.py - test package init
+    - tests/conftest.py - pytest fixtures (mock config, temp dirs)
+    - tests/test_text_processing.py - unit testy pre text_processing module
+    - pytest.ini - pytest konfigurácia
+    
+    Testy pre text_processing:
+    - test_clean_arabic_text() - testovanie normalizácie
+    - test_extract_legal_references() - testovanie detekcie odkazov
+    - test_split_into_chunks() - testovanie chunkingu
+    - test_remove_special_chars() - testovanie čistenia
+  
+  context:
+    - "Text processing existuje: utils/text_processing.py"
+    - "Config existuje: config.py"
+    - "Potrebujeme pytest, pytest-mock"
+    - "Testy s mock dátami (sample Arabic text, legal references)"
+  
+  requirements:
+    - Použiť pytest framework
+    - Mock external dependencies (config, logger)
+    - Test fixtures pre sample data
+    - Parametrized tests kde vhodné
+    - Clear test names v slovenčine alebo anglicky
+    - Assert messages pre failed tests
+    - Coverage >= 80% pre text_processing
+    - Docstrings vysvetľujúce čo test overuje
+
+  expected_files:
+    - tests/__init__.py
+    - tests/conftest.py
+    - tests/test_text_processing.py
+    - pytest.ini

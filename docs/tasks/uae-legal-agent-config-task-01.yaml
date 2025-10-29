@@ -1,0 +1,33 @@
+task:
+  type: structure
+  project: uae-legal-agent
+  description: |
+    Vytvor základnú directory structure pre UAE Legal Agent projekt.
+    
+    Potrebné adresáre:
+    - data/raw_documents/ (surové PDF dokumenty zo UAE zákonov)
+    - data/processed/ (spracované a očistené texty)
+    - data/embeddings/ (ChromaDB vektory)
+    - logs/ (aplikačné logy)
+    
+    Do každého adresára pridaj .gitkeep súbor aby sa commitli prázdne adresáre.
+    
+    Vytvor aj data/README.md s popisom účelu jednotlivých adresárov v slovenčine.
+
+  context:
+    - "Projekt: UAE Legal Agent - AI-powered legal analysis system"
+    - "Používa: ChromaDB pre RAG, Claude API pre analýzu"
+    - "Spracováva: Arabské právne dokumenty s prekladom do slovenčiny"
+  
+  requirements:
+    - Všetky adresáre musia mať .gitkeep
+    - README.md v data/ s jasným popisom
+    - Konzistentná naming convention
+    - Pripravené pre Git commit
+
+  expected_files:
+    - data/raw_documents/.gitkeep
+    - data/processed/.gitkeep
+    - data/embeddings/.gitkeep
+    - logs/.gitkeep
+    - data/README.md

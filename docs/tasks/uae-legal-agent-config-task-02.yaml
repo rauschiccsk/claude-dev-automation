@@ -1,0 +1,33 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor config.py s nastaveniami pre UAE Legal Agent.
+    
+    Potrebné sekcie:
+    - Claude API settings (model, max_tokens, temperature)
+    - ChromaDB settings (persist_directory, collection_name)
+    - Paths (data directories, logs)
+    - Application settings (language, debug mode)
+    
+    Použiť pydantic BaseSettings pre type-safe config.
+    Support pre .env file (never commit).
+    Všetky paths relatívne k project root.
+  
+  context:
+    - "Projekt používa: Claude Sonnet 4.5, ChromaDB, slovenčina"
+    - "Data adresáre: data/raw_documents, data/processed, data/embeddings"
+    - "Logs adresár: logs/"
+    - "Environment: Windows, development mode"
+  
+  requirements:
+    - Použiť pydantic BaseSettings
+    - Support pre .env file
+    - Type hints pre všetky nastavenia
+    - Dokumentované všetky parametre
+    - Default hodnoty pre development
+    - Validácia paths (musia existovať)
+
+  expected_files:
+    - config.py
+    - .env.example (template bez secrets)

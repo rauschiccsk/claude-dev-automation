@@ -1,0 +1,34 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor utils/pdf_processor.py pre extrakciu textu z PDF zákonov UAE.
+    
+    Funkcionality:
+    - extract_text_from_pdf(pdf_path: Path) -> str: Extrahovanie textu z PDF
+    - process_legal_document(pdf_path: Path) -> Dict: Kompletné spracovanie (extract + clean + metadata)
+    - save_processed_text(text: str, output_path: Path): Uloženie do data/processed/
+    - get_pdf_metadata(pdf_path: Path) -> Dict: Získanie metadát (pages, title, author)
+    
+    Použiť PyMuPDF (fitz) pre PDF reading.
+    Integrácia s logger a text_processing utils.
+    Error handling pre corrupted PDFs.
+  
+  context:
+    - "Logger existuje: utils/logger.py"
+    - "Text processing existuje: utils/text_processing.py (clean_arabic_text)"
+    - "Config existuje: config.py s paths"
+    - "Raw PDFs: data/raw_documents/"
+    - "Output: data/processed/"
+  
+  requirements:
+    - Použiť PyMuPDF (import fitz)
+    - Type hints pre všetky funkcie
+    - Docstrings v slovenčine
+    - Error handling (corrupted PDF, missing file)
+    - Logging všetkých operácií
+    - Integrácia s clean_arabic_text() z text_processing
+    - Return structured data (Dict s text, metadata, errors)
+
+  expected_files:
+    - utils/pdf_processor.py

@@ -1,0 +1,376 @@
+{
+  "project_name": "claude-dev-automation",
+  "description": "AI-Driven Multi-Project Development with 98% Token Savings - Unified file access manifest",
+  "repository": "https://github.com/rauschiccsk/claude-dev-automation",
+  "generated_at": "2025-10-29T14:52:36.397159",
+  "cache_version": "20251029-145236",
+  "base_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main",
+  "quick_access": {
+    "essential_docs": [
+      {
+        "name": "COMPLETE_SUMMARY.md",
+        "description": "Complete project overview and status",
+        "url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/COMPLETE_SUMMARY.md?v=20251029-145236"
+      },
+      {
+        "name": "PROJECT_RULES.md",
+        "description": "Development rules and conventions",
+        "url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/PROJECT_RULES.md?v=20251029-145236"
+      },
+      {
+        "name": "GIT_WORKFLOW.md",
+        "description": "Git workflow and branching strategy",
+        "url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/GIT_WORKFLOW.md?v=20251029-145236"
+      }
+    ],
+    "latest_session": {
+      "name": "2025-10-28_uae_tasks_verify_files.md",
+      "description": "Most recent development session",
+      "url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-28_uae_tasks_verify_files.md?v=20251029-145236"
+    },
+    "core_services": [
+      {
+        "name": "context_api.py",
+        "description": "Flask API for context management",
+        "url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/services/context_api.py?v=20251029-145236"
+      }
+    ],
+    "workflows": [
+      {
+        "name": "n8n-claude-dev-automation.json",
+        "description": "n8n workflow definition",
+        "url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/workflows/n8n-claude-dev-automation.json?v=20251029-145236"
+      }
+    ]
+  },
+  "categories": [
+    "documentation",
+    "session_notes",
+    "task_examples",
+    "python_services",
+    "python_tools",
+    "workflows",
+    "workspace_setup",
+    "configuration"
+  ],
+  "category_descriptions": {
+    "documentation": "Project documentation and guides",
+    "session_notes": "Development session notes",
+    "task_examples": "Example tasks and templates",
+    "python_services": "Flask API services",
+    "python_tools": "Core Python automation tools",
+    "workflows": "n8n workflow definitions",
+    "workspace_setup": "Workspace setup scripts",
+    "configuration": "Configuration files and dependencies"
+  },
+  "statistics": {
+    "total_files": 36,
+    "by_category": {
+      "documentation": 8,
+      "session_notes": 9,
+      "task_examples": 0,
+      "python_services": 1,
+      "python_tools": 14,
+      "workflows": 2,
+      "workspace_setup": 0,
+      "configuration": 2
+    },
+    "generated_by": "generate_project_access.py"
+  },
+  "files": [
+    {
+      "path": "docs/COMPLETE_SUMMARY.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/COMPLETE_SUMMARY.md?v=20251029-145236",
+      "size": 9565,
+      "extension": ".md",
+      "name": "COMPLETE_SUMMARY.md",
+      "category": "documentation"
+    },
+    {
+      "path": "docs/GIT_WORKFLOW.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/GIT_WORKFLOW.md?v=20251029-145236",
+      "size": 6335,
+      "extension": ".md",
+      "name": "GIT_WORKFLOW.md",
+      "category": "documentation"
+    },
+    {
+      "path": "docs/INSTALLATION_GUIDE.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/INSTALLATION_GUIDE.md?v=20251029-145236",
+      "size": 7178,
+      "extension": ".md",
+      "name": "INSTALLATION_GUIDE.md",
+      "category": "documentation"
+    },
+    {
+      "path": "docs/PROJECT_RULES.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/PROJECT_RULES.md?v=20251029-145236",
+      "size": 8198,
+      "extension": ".md",
+      "name": "PROJECT_RULES.md",
+      "category": "documentation"
+    },
+    {
+      "path": "docs/PYCHARM_SETUP.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/PYCHARM_SETUP.md?v=20251029-145236",
+      "size": 5831,
+      "extension": ".md",
+      "name": "PYCHARM_SETUP.md",
+      "category": "documentation"
+    },
+    {
+      "path": "docs/QUICK_INSTALL.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/QUICK_INSTALL.md?v=20251029-145236",
+      "size": 8061,
+      "extension": ".md",
+      "name": "QUICK_INSTALL.md",
+      "category": "documentation"
+    },
+    {
+      "path": "docs/SETUP.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/SETUP.md?v=20251029-145236",
+      "size": 4722,
+      "extension": ".md",
+      "name": "SETUP.md",
+      "category": "documentation"
+    },
+    {
+      "path": "docs/TEST_TASKS.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/TEST_TASKS.md?v=20251029-145236",
+      "size": 7300,
+      "extension": ".md",
+      "name": "TEST_TASKS.md",
+      "category": "documentation"
+    },
+    {
+      "path": "docs/sessions/2025-10-26_initial_setup_session.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-26_initial_setup_session.md?v=20251029-145236",
+      "size": 15269,
+      "extension": ".md",
+      "name": "2025-10-26_initial_setup_session.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "docs/sessions/2025-10-26_migration_and_upgrade.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-26_migration_and_upgrade.md?v=20251029-145236",
+      "size": 7195,
+      "extension": ".md",
+      "name": "2025-10-26_migration_and_upgrade.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "docs/sessions/2025-10-27_complete_setup.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-27_complete_setup.md?v=20251029-145236",
+      "size": 11706,
+      "extension": ".md",
+      "name": "2025-10-27_complete_setup.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "docs/sessions/2025-10-27_complete_system_fix.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-27_complete_system_fix.md?v=20251029-145236",
+      "size": 12238,
+      "extension": ".md",
+      "name": "2025-10-27_complete_system_fix.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "docs/sessions/2025-10-27_n8n_migration.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-27_n8n_migration.md?v=20251029-145236",
+      "size": 10731,
+      "extension": ".md",
+      "name": "2025-10-27_n8n_migration.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "docs/sessions/2025-10-27_n8n_setup.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-27_n8n_setup.md?v=20251029-145236",
+      "size": 9488,
+      "extension": ".md",
+      "name": "2025-10-27_n8n_setup.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "docs/sessions/2025-10-28_n8n_file_trigger.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-28_n8n_file_trigger.md?v=20251029-145236",
+      "size": 7067,
+      "extension": ".md",
+      "name": "2025-10-28_n8n_file_trigger.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "docs/sessions/2025-10-28_n8n_git_fix.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-28_n8n_git_fix.md?v=20251029-145236",
+      "size": 10512,
+      "extension": ".md",
+      "name": "2025-10-28_n8n_git_fix.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "docs/sessions/2025-10-28_uae_tasks_verify_files.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/docs/sessions/2025-10-28_uae_tasks_verify_files.md?v=20251029-145236",
+      "size": 12210,
+      "extension": ".md",
+      "name": "2025-10-28_uae_tasks_verify_files.md",
+      "category": "session_notes"
+    },
+    {
+      "path": "requirements.txt",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/requirements.txt?v=20251029-145236",
+      "size": 238,
+      "extension": ".txt",
+      "name": "requirements.txt",
+      "category": "configuration"
+    },
+    {
+      "path": "services/context_api.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/services/context_api.py?v=20251029-145236",
+      "size": 15335,
+      "extension": ".py",
+      "name": "context_api.py",
+      "category": "python_services"
+    },
+    {
+      "path": "services/requirements.txt",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/services/requirements.txt?v=20251029-145236",
+      "size": 163,
+      "extension": ".txt",
+      "name": "requirements.txt",
+      "category": "configuration"
+    },
+    {
+      "path": "tools/claude_api.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/claude_api.py?v=20251029-145236",
+      "size": 8947,
+      "extension": ".py",
+      "name": "claude_api.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/claude_runner.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/claude_runner.py?v=20251029-145236",
+      "size": 7165,
+      "extension": ".py",
+      "name": "claude_runner.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/config_manager.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/config_manager.py?v=20251029-145236",
+      "size": 4227,
+      "extension": ".py",
+      "name": "config_manager.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/context_builder.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/context_builder.py?v=20251029-145236",
+      "size": 11155,
+      "extension": ".py",
+      "name": "context_builder.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/enhanced_context_builder.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/enhanced_context_builder.py?v=20251029-145236",
+      "size": 7559,
+      "extension": ".py",
+      "name": "enhanced_context_builder.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/file_operations.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/file_operations.py?v=20251029-145236",
+      "size": 9649,
+      "extension": ".py",
+      "name": "file_operations.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/git_handler.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/git_handler.py?v=20251029-145236",
+      "size": 4955,
+      "extension": ".py",
+      "name": "git_handler.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/git_operations.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/git_operations.py?v=20251029-145236",
+      "size": 9108,
+      "extension": ".py",
+      "name": "git_operations.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/orchestrator.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/orchestrator.py?v=20251029-145236",
+      "size": 8131,
+      "extension": ".py",
+      "name": "orchestrator.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/project_manager.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/project_manager.py?v=20251029-145236",
+      "size": 8657,
+      "extension": ".py",
+      "name": "project_manager.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/response_builder.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/response_builder.py?v=20251029-145236",
+      "size": 5013,
+      "extension": ".py",
+      "name": "response_builder.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/task_parser.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/task_parser.py?v=20251029-145236",
+      "size": 4314,
+      "extension": ".py",
+      "name": "task_parser.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/test_all_modules.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/test_all_modules.py?v=20251029-145236",
+      "size": 6128,
+      "extension": ".py",
+      "name": "test_all_modules.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "tools/test_complete_pipeline.py",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/tools/test_complete_pipeline.py?v=20251029-145236",
+      "size": 5246,
+      "extension": ".py",
+      "name": "test_complete_pipeline.py",
+      "category": "python_tools"
+    },
+    {
+      "path": "workflows/README.md",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/workflows/README.md?v=20251029-145236",
+      "size": 3263,
+      "extension": ".md",
+      "name": "README.md",
+      "category": "workflows"
+    },
+    {
+      "path": "workflows/n8n-claude-dev-automation.json",
+      "raw_url": "https://raw.githubusercontent.com/rauschiccsk/claude-dev-automation/main/workflows/n8n-claude-dev-automation.json?v=20251029-145236",
+      "size": 16564,
+      "extension": ".json",
+      "name": "n8n-claude-dev-automation.json",
+      "category": "workflows"
+    }
+  ],
+  "usage_instructions": {
+    "step_1": "Load COMPLETE_SUMMARY.md first for project overview",
+    "step_2": "Load this manifest for access to all project files",
+    "step_3": "Access individual files using raw_url with cache version",
+    "note": "Always regenerate manifest after pushing changes to get fresh cache version"
+  }
+}

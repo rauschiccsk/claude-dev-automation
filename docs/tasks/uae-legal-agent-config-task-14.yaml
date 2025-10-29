@@ -1,0 +1,36 @@
+task:
+  type: feature
+  project: uae-legal-agent
+  description: |
+    Vytvor tests/test_logger.py s unit testami pre utils/logger.py modul.
+    
+    Testy pre logger funkcionalitu:
+    - test_logger_creation() - overenie že get_logger() vytvorí logger
+    - test_log_levels() - testovanie DEBUG, INFO, WARNING, ERROR
+    - test_file_output() - overenie že logy sa zapisujú do súboru
+    - test_console_output() - overenie console output
+    - test_utf8_encoding() - testovanie slovenských znakov v logoch
+    - test_rotating_handler() - overenie rotation policy
+    
+    Použiť pytest fixtures pre temp directories a mock loggers.
+    Testy by mali byť izolované (každý test vlastný log file).
+  
+  context:
+    - "Logger existuje: utils/logger.py"
+    - "Fixtures existujú: tests/conftest.py"
+    - "Logger používa RotatingFileHandler"
+    - "Logs path: logs/"
+    - "UTF-8 encoding pre slovenčinu"
+  
+  requirements:
+    - Použiť pytest framework
+    - Fixtures pre temp log files
+    - Mock file operations kde vhodné
+    - Test izolation (každý test vlastný logger)
+    - Overenie file content (log messages)
+    - Overenie UTF-8 encoding
+    - Clear test names
+    - Docstrings vysvetľujúce čo test overuje
+
+  expected_files:
+    - tests/test_logger.py
