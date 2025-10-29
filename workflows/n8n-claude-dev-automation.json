@@ -18,53 +18,47 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "http://127.0.0.1:5000/parse-task",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"task_description\": \"{{ $json.task }}\"\n}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
+        "fileSelector": "C:/Deployment/claude-dev-automation/task.yaml",
+        "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
       "position": [
-        -16,
+        -400,
         -464
       ],
-      "id": "c671c691-2207-4bfe-b9b9-3d5f6dfd8589",
-      "name": "Parse Task Input"
+      "id": "cf9be354-5ab9-42ce-8204-5318daac833a",
+      "name": "Read/Write Files from Disk",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "functionCode": "// Read file content from BINARY data (Read/Write Files returns binary)\nlet fileContent = '';\n\nconsole.log('=== Parse YAML Task Debug ===');\nconsole.log('Has binary:', !!$input.item.binary);\nconsole.log('Binary keys:', $input.item.binary ? Object.keys($input.item.binary) : 'none');\n\n// Read from binary.data (Read/Write Files stores file content here)\nif ($input.item.binary && $input.item.binary.data) {\n  const buffer = Buffer.from($input.item.binary.data.data, 'base64');\n  fileContent = buffer.toString('utf8');\n  console.log('File read from binary.data, length:', fileContent.length);\n} else {\n  throw new Error('No binary data found. Check if Read/Write Files node executed correctly.');\n}\n\nconsole.log('First 200 chars:', fileContent.substring(0, 200));\n\n// Parse YAML\nconst lines = fileContent.split('\\n');\nconst task = {\n  type: '',\n  project: '',\n  description: '',\n  priority: 'P2'\n};\n\nlet currentSection = '';\nlet descriptionLines = [];\n\nfor (const line of lines) {\n  const trimmed = line.trim();\n  \n  if (trimmed.startsWith('type:')) {\n    task.type = trimmed.replace('type:', '').trim();\n  } else if (trimmed.startsWith('project:')) {\n    task.project = trimmed.replace('project:', '').trim();\n  } else if (trimmed.startsWith('description:')) {\n    currentSection = 'description';\n    const desc = trimmed.replace('description:', '').trim();\n    if (desc && desc !== '|') {\n      descriptionLines.push(desc);\n    }\n  } else if (currentSection === 'description' && trimmed && !trimmed.startsWith('context:') && !trimmed.startsWith('requirements:')) {\n    descriptionLines.push(trimmed);\n  } else if (trimmed.startsWith('context:') || trimmed.startsWith('requirements:')) {\n    currentSection = '';\n  }\n}\n\n// Join description\ntask.description = descriptionLines.join(' ').trim();\n\n// Build full task string for context\nconst taskString = `${task.type}: ${task.description}`;\n\nconsole.log('Parsed successfully:');\nconsole.log('  Type:', task.type);\nconsole.log('  Project:', task.project);\nconsole.log('  Description length:', task.description.length);\nconsole.log('  Task string:', taskString);\n\nreturn {\n  json: {\n    task: taskString,\n    project: task.project,\n    priority: task.priority,\n    type: task.type,\n    description: task.description\n  }\n};"
+      },
+      "id": "90f0c0d8-8577-4e91-8054-58ef0f27c373",
+      "name": "Parse YAML Task",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        -464
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "http://127.0.0.1:5000/simple-task",
+        "url": "http://127.0.0.1:5000/build-context",
         "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "project_name",
-              "value": "={{ $json.project }}"
-            },
-            {
-              "name": "task_description",
-              "value": "={{ $json.task }}"
-            }
-          ]
-        },
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"project_name\": $json.project,\n  \"task_description\": $json.task\n} }}",
         "options": {}
       },
       "id": "baffb0fa-5884-477d-8042-bb1d2b64d23e",
       "name": "Build Smart Context",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
+      "typeVersion": 4.2,
       "position": [
-        208,
+        16,
         -464
       ]
     },
@@ -89,15 +83,15 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 4096,\n  \"system\": \"CRITICAL INSTRUCTIONS:\\n1. Read the user's task CAREFULLY\\n2. Create ONLY the file(s) explicitly mentioned in the task\\n3. Do NOT create documentation, roadmaps, or any extra files\\n4. Keep file content SHORT and simple\\n5. ALWAYS use this XML format:\\n\\n<file_operations>\\n  <operation type=\\\"create\\\" path=\\\"filename.ext\\\">\\n    <content>\\nSimple content here\\n    </content>\\n  </operation>\\n</file_operations>\\n\\nDo NOT write anything before or after the XML tags. ONLY output the XML.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": $json.context\n    }\n  ]\n} }}",
+        "jsonBody": "={{ {\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 4096,\n  \"system\": \"You are an expert software developer. Read the project context and task carefully.\\n\\nFor CREATE operations - create new files as requested.\\nFor MODIFY operations - you will see the existing file content in the context. Modify it appropriately.\\n\\nALWAYS use this exact XML format for file operations:\\n\\n<file_operations>\\n  <operation type=\\\"create\\\" path=\\\"filename.ext\\\">\\n    <content>\\nFile content here\\n    </content>\\n  </operation>\\n</file_operations>\\n\\nOperation types: create, modify, delete\\nFor modify operations, provide the COMPLETE new file content.\\nDo NOT write anything before or after the XML tags. ONLY output the XML.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": $json.context\n    }\n  ]\n} }}",
         "options": {}
       },
       "id": "c9a959fb-54dd-4dad-bb30-5203a0e834e2",
       "name": "Call Claude API",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
+      "typeVersion": 4.2,
       "position": [
-        432,
+        240,
         -464
       ],
       "credentials": {
@@ -109,14 +103,14 @@
     },
     {
       "parameters": {
-        "functionCode": "// Parse Claude response and extract file operations\nconst response = $input.item.json;\n\n// Extract content text\nlet contentText = '';\nif (response.content && Array.isArray(response.content)) {\n  for (const block of response.content) {\n    if (block.type === 'text') {\n      contentText += block.text;\n    }\n  }\n}\n\n// Extract token usage\nconst usage = response.usage || {};\nconst tokenUsage = {\n  input_tokens: usage.input_tokens || 0,\n  output_tokens: usage.output_tokens || 0,\n  total_tokens: (usage.input_tokens || 0) + (usage.output_tokens || 0)\n};\n\n// Calculate cost (Claude Sonnet 4.5 pricing)\nconst inputCost = (tokenUsage.input_tokens / 1000000) * 3.0;\nconst outputCost = (tokenUsage.output_tokens / 1000000) * 15.0;\nconst totalCost = inputCost + outputCost;\n\n// Extract file operations from XML - FIXED REGEX\nconsole.log('DEBUG: contentText length:', contentText.length);\nconsole.log('DEBUG: contentText preview:', contentText.substring(0, 500));\n\nconst fileOpsRegex = /<file_operations>([\\s\\S]*?)<\\/file_operations>/gi;\nconst operations = [];\n\nlet match;\nwhile ((match = fileOpsRegex.exec(contentText)) !== null) {\n  const xmlContent = match[1];\n  \n  // Parse individual operations - FLEXIBLE REGEX for whitespace\n  const opRegex = /<operation\\s+type=\"([^\"]+)\"\\s+path=\"([^\"]+)\">([\\s\\S]*?)<\\/operation>/gi;\n  \n  let opMatch;\n  while ((opMatch = opRegex.exec(xmlContent)) !== null) {\n    const type = opMatch[1];\n    const path = opMatch[2];\n    const fullContent = opMatch[3];\n    \n    // Extract content between <content> tags - MORE FLEXIBLE\n    const contentMatch = fullContent.match(/<content>([\\s\\S]*?)<\\/content>/i);\n    const content = contentMatch ? contentMatch[1].trim() : '';\n    \n    if (type && path) {\n      operations.push({\n        type: type,\n        path: path,\n        content: content\n      });\n    }\n  }\n}\n\nconsole.log(`Found ${operations.length} file operations`);\n\nreturn {\n  json: {\n    claude_response: contentText,\n    token_usage: tokenUsage,\n    cost_usd: totalCost,\n    cost_eur: totalCost * 1.10,\n    operations: operations,\n    operations_count: operations.length,\n    model: response.model || 'claude-sonnet-4-5-20250929'\n  }\n};"
+        "functionCode": "// Parse Claude response and extract file operations\nconst response = $input.item.json;\n\n// Extract content text\nlet contentText = '';\nif (response.content && Array.isArray(response.content)) {\n  for (const block of response.content) {\n    if (block.type === 'text') {\n      contentText += block.text;\n    }\n  }\n}\n\n// Extract token usage\nconst usage = response.usage || {};\nconst tokenUsage = {\n  input_tokens: usage.input_tokens || 0,\n  output_tokens: usage.output_tokens || 0,\n  total_tokens: (usage.input_tokens || 0) + (usage.output_tokens || 0)\n};\n\n// Calculate cost (Claude Sonnet 4.5 pricing)\nconst inputCost = (tokenUsage.input_tokens / 1000000) * 3.0;\nconst outputCost = (tokenUsage.output_tokens / 1000000) * 15.0;\nconst totalCost = inputCost + outputCost;\n\n// Extract file operations from XML\nconsole.log('DEBUG: contentText length:', contentText.length);\nconsole.log('DEBUG: contentText preview:', contentText.substring(0, 500));\n\nconst fileOpsRegex = /<file_operations>([\\s\\S]*?)<\\/file_operations>/gi;\nconst operations = [];\n\nlet match;\nwhile ((match = fileOpsRegex.exec(contentText)) !== null) {\n  const xmlContent = match[1];\n  \n  // Parse individual operations\n  const opRegex = /<operation\\s+type=\"([^\"]+)\"\\s+path=\"([^\"]+)\">([\\s\\S]*?)<\\/operation>/gi;\n  \n  let opMatch;\n  while ((opMatch = opRegex.exec(xmlContent)) !== null) {\n    const type = opMatch[1];\n    const path = opMatch[2];\n    const fullContent = opMatch[3];\n    \n    // Extract content between <content> tags\n    const contentMatch = fullContent.match(/<content>([\\s\\S]*?)<\\/content>/i);\n    const content = contentMatch ? contentMatch[1].trim() : '';\n    \n    if (type && path) {\n      operations.push({\n        type: type,\n        path: path,\n        content: content\n      });\n    }\n  }\n}\n\nconsole.log(`Found ${operations.length} file operations`);\n\nreturn {\n  json: {\n    claude_response: contentText,\n    token_usage: tokenUsage,\n    cost_usd: totalCost,\n    cost_eur: totalCost * 1.10,\n    operations: operations,\n    operations_count: operations.length,\n    model: response.model || 'claude-sonnet-4-5-20250929'\n  }\n};"
       },
       "id": "2bdd0422-60c8-4c0e-8f33-103ac11db196",
       "name": "Parse File Operations",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        640,
+        448,
         -464
       ]
     },
@@ -132,11 +126,29 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        832,
+        640,
         -464
       ],
       "id": "d911d92c-2162-446c-93bc-6dcfb636616f",
       "name": "Execute Operations"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5000/verify-files",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"project_name\": $('Parse YAML Task').item.json.project,\n  \"file_results\": $json.file_results\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        832,
+        -464
+      ],
+      "id": "021e68a7-2040-4092-ad6d-76ecca2cb1f1",
+      "name": "Verify Files"
     },
     {
       "parameters": {
@@ -147,20 +159,20 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        1200,
+        1024,
         -464
       ]
     },
     {
       "parameters": {
-        "functionCode": "// Generate clean response.md (NO full source code!)\nconst data = $node['Parse File Operations'].json;\nconst execResults = $node['Execute Operations'].json;\nconst task = $node['Parse Task Input'].json;\nconst now = new Date().toISOString().replace('T', ' ').substr(0, 19);\n\nlet markdown = `# Task Response\\n\\n`;\nmarkdown += `**Generated:** ${now}\\n\\n`;\n\n// Task Summary\nmarkdown += `## 📋 Task Summary\\n\\n`;\nmarkdown += `**Project:** ${task.project}\\n\\n`;\nmarkdown += `**Task:** ${task.task}\\n\\n`;\nmarkdown += `**Priority:** ${task.priority}\\n\\n`;\n\n// File Operations Summary (NO CODE!)\nif (data.operations_count > 0) {\n  markdown += `## 📝 File Operations\\n\\n`;\n  markdown += `**Total operations:** ${data.operations_count}\\n`;\n  \n  if (execResults && execResults.file_results) {\n    const successCount = execResults.file_results.filter(r => r.success).length;\n    const failCount = execResults.file_results.filter(r => !r.success).length;\n    \n    markdown += `**Success:** ${successCount}\\n`;\n    markdown += `**Failed:** ${failCount}\\n\\n`;\n    \n    markdown += `**Created/Modified files:**\\n`;\n    for (const result of execResults.file_results) {\n      const status = result.success ? '✅' : '❌';\n      markdown += `- ${status} **${result.operation.toUpperCase()}**: \\`${result.path}\\`\\n`;\n      if (!result.success && result.error) {\n        markdown += `  - Error: ${result.error}\\n`;\n      }\n    }\n  }\n  markdown += `\\n`;\n} else {\n  // No file operations - show Claude's response\n  markdown += `## 💬 Claude's Analysis\\n\\n`;\n  markdown += data.claude_response + `\\n\\n`;\n}\n\n// Token Usage\nmarkdown += `## 📊 Token Usage\\n\\n`;\nmarkdown += `- **Input tokens:** ${data.token_usage.input_tokens.toLocaleString()}\\n`;\nmarkdown += `- **Output tokens:** ${data.token_usage.output_tokens.toLocaleString()}\\n`;\nmarkdown += `- **Total tokens:** ${data.token_usage.total_tokens.toLocaleString()}\\n\\n`;\nmarkdown += `**Cost:** $${data.cost_usd.toFixed(4)} USD (€${data.cost_eur.toFixed(4)} EUR)\\n\\n`;\n\n// Financial Balance\nmarkdown += `💰 **Financial Balance:** \\n`;\nmarkdown += `   - This task cost: $${data.cost_usd.toFixed(4)}\\n`;\nmarkdown += `   - Zostatok: ~$2.50 USD (check at https://console.anthropic.com/settings/billing)\\n\\n`;\n\nmarkdown += `---\\n\\n`;\nmarkdown += `*Generated by Claude Dev Automation (n8n)*\\n`;\n\nreturn {\n  json: {\n    response_markdown: markdown\n  }\n};"
+        "functionCode": "// Generate clean response.md\nconst data = $node['Parse File Operations'].json;\nconst execResults = $node['Execute Operations'].json;\nconst yamlData = $node['Parse YAML Task'].json;\nconst now = new Date().toISOString().replace('T', ' ').substr(0, 19);\n\nlet markdown = `# Task Response\\n\\n`;\nmarkdown += `**Generated:** ${now}\\n\\n`;\n\n// Task Summary\nmarkdown += `## 📋 Task Summary\\n\\n`;\nmarkdown += `**Project:** ${yamlData.project}\\n\\n`;\nmarkdown += `**Task:** ${yamlData.task}\\n\\n`;\nmarkdown += `**Priority:** ${yamlData.priority}\\n\\n`;\n\n// File Operations Summary\nif (data.operations_count > 0) {\n  markdown += `## 📝 File Operations\\n\\n`;\n  markdown += `**Total operations:** ${data.operations_count}\\n`;\n  \n  if (execResults && execResults.file_results) {\n    const successCount = execResults.file_results.filter(r => r.success).length;\n    const failCount = execResults.file_results.filter(r => !r.success).length;\n    \n    markdown += `**Success:** ${successCount}\\n`;\n    markdown += `**Failed:** ${failCount}\\n\\n`;\n    \n    markdown += `**Created/Modified files:**\\n`;\n    for (const result of execResults.file_results) {\n      const status = result.success ? '✅' : '❌';\n      markdown += `- ${status} **${result.operation.toUpperCase()}**: \\`${result.path}\\`\\n`;\n      if (!result.success && result.error) {\n        markdown += `  - Error: ${result.error}\\n`;\n      }\n    }\n  }\n  markdown += `\\n`;\n} else {\n  markdown += `## 💬 Claude's Analysis\\n\\n`;\n  markdown += data.claude_response + `\\n\\n`;\n}\n\n// Token Usage\nmarkdown += `## 📊 Token Usage\\n\\n`;\nmarkdown += `- **Input tokens:** ${data.token_usage.input_tokens.toLocaleString()}\\n`;\nmarkdown += `- **Output tokens:** ${data.token_usage.output_tokens.toLocaleString()}\\n`;\nmarkdown += `- **Total tokens:** ${data.token_usage.total_tokens.toLocaleString()}\\n\\n`;\nmarkdown += `**Cost:** $${data.cost_usd.toFixed(4)} USD (€${data.cost_eur.toFixed(4)} EUR)\\n\\n`;\n\n// Financial Balance\nmarkdown += `💰 **Financial Balance:** \\n`;\nmarkdown += `   - This task cost: $${data.cost_usd.toFixed(4)}\\n`;\nmarkdown += `   - Zostatok: ~$2.50 USD\\n\\n`;\n\nmarkdown += `---\\n\\n`;\nmarkdown += `*Generated by Claude Dev Automation (n8n)*\\n`;\n\nreturn {\n  json: {\n    response_markdown: markdown\n  }\n};"
       },
       "id": "6f2d8445-b7b8-469a-b84a-37f1fb520ecd",
       "name": "Generate Clean Response",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        1360,
+        1216,
         -464
       ]
     },
@@ -182,57 +194,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1536,
+        1408,
         -464
       ],
       "id": "bc8b0964-0c2f-44c1-8ec2-9cd0fa7c030c",
       "name": "Save Response"
-    },
-    {
-      "parameters": {
-        "functionCode": "// Read file content from BINARY data (Read/Write Files returns binary)\nlet fileContent = '';\n\nconsole.log('=== Parse YAML Task Debug ===');\nconsole.log('Has binary:', !!$input.item.binary);\nconsole.log('Binary keys:', $input.item.binary ? Object.keys($input.item.binary) : 'none');\n\n// Read from binary.data (Read/Write Files stores file content here)\nif ($input.item.binary && $input.item.binary.data) {\n  const buffer = Buffer.from($input.item.binary.data.data, 'base64');\n  fileContent = buffer.toString('utf8');\n  console.log('File read from binary.data, length:', fileContent.length);\n} else {\n  throw new Error('No binary data found. Check if Read/Write Files node executed correctly.');\n}\n\nconsole.log('First 200 chars:', fileContent.substring(0, 200));\n\n// Parse YAML\nconst lines = fileContent.split('\\n');\nconst task = {\n  type: '',\n  project: '',\n  description: '',\n  priority: 'P2'\n};\n\nlet currentSection = '';\nlet descriptionLines = [];\n\nfor (const line of lines) {\n  const trimmed = line.trim();\n  \n  if (trimmed.startsWith('type:')) {\n    task.type = trimmed.replace('type:', '').trim();\n  } else if (trimmed.startsWith('project:')) {\n    task.project = trimmed.replace('project:', '').trim();\n  } else if (trimmed.startsWith('description:')) {\n    currentSection = 'description';\n    const desc = trimmed.replace('description:', '').trim();\n    if (desc && desc !== '|') {\n      descriptionLines.push(desc);\n    }\n  } else if (currentSection === 'description' && trimmed && !trimmed.startsWith('context:') && !trimmed.startsWith('requirements:')) {\n    descriptionLines.push(trimmed);\n  } else if (trimmed.startsWith('context:') || trimmed.startsWith('requirements:')) {\n    currentSection = '';\n  }\n}\n\n// Join description and ESCAPE quotes for JSON\ntask.description = descriptionLines.join(' ').trim();\n\n// Build task string for Flask API - ESCAPE QUOTES!\nconst taskString = `${task.type}: ${task.project} - ${task.description}`;\n\n// CRITICAL: Escape quotes in task string for JSON compatibility\nconst escapedTaskString = taskString.replace(/\"/g, '\\\\\"');\n\nconsole.log('Parsed successfully:');\nconsole.log('  Type:', task.type);\nconsole.log('  Project:', task.project);\nconsole.log('  Description length:', task.description.length);\nconsole.log('  Task string (escaped):', escapedTaskString);\n\nreturn {\n  json: {\n    task: escapedTaskString,\n    project: task.project,\n    priority: task.priority,\n    type: task.type\n  }\n};"
-      },
-      "id": "90f0c0d8-8577-4e91-8054-58ef0f27c373",
-      "name": "Parse YAML Task",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [
-        -208,
-        -464
-      ]
-    },
-    {
-      "parameters": {
-        "fileSelector": "C:/Deployment/claude-dev-automation/task.yaml",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1,
-      "position": [
-        -400,
-        -464
-      ],
-      "id": "cf9be354-5ab9-42ce-8204-5318daac833a",
-      "name": "Read/Write Files from Disk",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "http://127.0.0.1:5000/verify-files",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ {\n  \"project_name\": $('Parse YAML Task').item.json.project,\n  \"file_results\": $json.file_results\n} }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1024,
-        -464
-      ],
-      "id": "021e68a7-2040-4092-ad6d-76ecca2cb1f1",
-      "name": "Verify Files"
     }
   ],
   "pinData": {},
@@ -248,7 +214,18 @@
         ]
       ]
     },
-    "Parse Task Input": {
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Parse YAML Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse YAML Task": {
       "main": [
         [
           {
@@ -303,6 +280,17 @@
         ]
       ]
     },
+    "Verify Files": {
+      "main": [
+        [
+          {
+            "node": "Git Commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Git Commit": {
       "main": [
         [
@@ -319,39 +307,6 @@
         [
           {
             "node": "Save Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse YAML Task": {
-      "main": [
-        [
-          {
-            "node": "Parse Task Input",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read/Write Files from Disk": {
-      "main": [
-        [
-          {
-            "node": "Parse YAML Task",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Verify Files": {
-      "main": [
-        [
-          {
-            "node": "Git Commit",
             "type": "main",
             "index": 0
           }
